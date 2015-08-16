@@ -1,5 +1,6 @@
 (ns lolitemsets.core
   (:require
+    [clojure.tools.cli :refer [parse-opts]]
     [cheshire.core :as json]
     [clojure.java.io :as io])
   (:gen-class))
@@ -44,6 +45,22 @@
       (+ base-as as)
       (+ base-crit crit))))
 
+(defn champ-hp-ad [champ armor hp]
+  (let [base-armor (max-champ-stat champ :armor :armorperlevel)
+        base-hp    (max-champ-stat champ :hp :hpperlevel)]
+    (+ (+ base-hp hp)
+       (* (+ base-hp hp)
+          (/ (+ base-armor armor)
+             100)))))
+
+(defn champ-hp-ap [champ mr hp]
+  (let [base-mr (max-champ-stat champ :spellblock :spellblockperlevel)
+        base-hp (max-champ-stat champ :hp :hpperlevel)]
+    (+ (+ base-hp hp)
+       (* (+ base-hp hp)
+          (/ (+ base-mr mr)
+             100)))))
+
 (defn champ-armor [champ armor]
   (let [base-armor (max-champ-stat champ :armor :armorperlevel)]
     (+ base-armor armor)))
@@ -62,6 +79,8 @@
 (defn item-crit [item] (get-in item [:stats :FlatCritChanceMod] 0))
 (defn item-as [item] (get-in item [:stats :PercentAttackSpeedMod] 0))
 (defn item-armor [item] (get-in item [:stats :FlatArmorMod] 0))
+(defn item-mr [item] (get-in item [:stats :FlatSpellBlockMod] 0))
+(defn item-hp [item] (get-in item [:stats :FlatHPPoolMod] 0))
 (defn item-ls [item] (get-in item [:stats :PercentLifeStealMod] 0))
 
 (defn build-prop [prop build]
@@ -74,8 +93,17 @@
     (build-prop item-as build)
     (build-prop item-crit build)))
 
-(defn build-armor [champ build]
-  (champ-armor champ (build-prop item-armor build)))
+(defn build-hp-ad [champ build] ; effecive health
+  (champ-hp-ad
+    champ
+    (build-prop item-armor build)
+    (build-prop item-hp build)))
+
+(defn build-hp-ap [champ build] ; effecive health
+  (champ-hp-ap
+    champ
+    (build-prop item-mr build)
+    (build-prop item-hp build)))
 
 (defn build-lsps [champ build] ; life steal per second
   (* (build-dps champ build)
@@ -85,43 +113,58 @@
   (let [fns (take-nth 2 fn-weight)
         weights (take-nth 2 (rest fn-weight))
         f1 (apply juxt fns)
-        f2 #(map * % weights)
-        f3 #(apply + %)]
-    (comp f3 f2 f1)))
+        f2 (fn [s] (apply + (map #(Math/sqrt %) (map * s weights))))]
+    (comp f2 f1)))
 
+; Multiobjective Simulated Annealing: A Comparative Study to Evolutionary Algorithms
+; http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.74.2194&rep=rep1&type=pdf
 (defn steps [S0 energy perturb T dT]
-  (letfn [(step [[S E T]]
-            (let [S2     (perturb S)
-                  E2     (energy S2)
-                  [S E]  (if (and E2 (> (Math/exp (/  (- E2 E) T)) (rand)))
-                               [S2 E2] [S E])]
-              [S E (* T (- 1.0 dT))]))]
-    (iterate step [S0 (energy S0) T])))
+  (letfn [(dominates [i j] (every? identity (map #(<= (% i) (% j)) energy)))
+          (step [[S T]]
+            (let [S2  (perturb S)
+                  Sn  (if (or (dominates S S2) (> (Math/exp (/ -10 T)) (rand))) S2 S)]
+              [Sn (* T (- 1.0 dT))]))]
+    (iterate step [S0 T])))
 
 (defn list-champs []
   (dorun (map-indexed #(println %1 (:name %2)) champs)))
 
-(defn print-results [champ [build & _]]
+(defn print-results [champ build]
   (println "Items:" (map :name build))
-  (println "DPS:" (build-dps champ build))
+  (println "AD/s:" (build-dps champ build))
+  (println "life steal/s:" (build-lsps champ build))
+  (println "Effective life (Armor):" (build-hp-ad champ build))
+  (println "Effective life (MR):" (build-hp-ap champ build))
   (println "life steal:" (* 100 (build-prop item-ls build)))
-  (println "armor:" (build-armor champ build))
+  (println "armor:" (champ-armor champ (build-prop item-armor build)))
   (println "attack damage:" (champ-ad champ (build-prop item-ad build)))
   (println "attack speed:" (+ (max-champ-as champ) (build-prop item-as build)))
   (println "crit:" (* 100 (build-prop item-crit build))))
 
+(defn run [s]
+  (ffirst (drop-while (fn [[_ t]] (> t 0.1)) s)))
+
 (defn -main
   "I don't do a whole lot ... yet."
-  [champ dps lsps armor]
-  (let [champ (nth champs (Integer. champ))
-        dps-weight (Float. dps)
-        lsps-weight (Float. lsps)
-        armor-weight (Float. armor)
-        energy (weighted-sum build-dps dps-weight
-                             build-lsps lsps-weight
-                             build-armor armor-weight)]
-    (print-results champ
-      (nth (steps (rand-build)
-                  (partial energy champ)
-                  swap-item 1000 0.0001)
-           50000))))
+  [& args]
+  (let [opts (parse-opts args
+               [[nil "--attack-damage"]
+                [nil "--ability-power"]
+                [nil "--life-steal"]
+                [nil "--armor"]
+                [nil "--magic-resist"]
+                [nil "--list"]])
+        chid (Integer. (or (first (:arguments opts)) 0))
+        champ (nth champs chid)
+        energy (map
+                 #(partial % champ)
+                 (remove nil?
+                   [(when (:attack-damage (:options opts)) build-dps)
+                    (when (:life-steal    (:options opts)) build-lsps)
+                    (when (:armor         (:options opts)) build-hp-ad)
+                    (when (:magic-resist  (:options opts)) build-hp-ap)
+                    ]))]
+    (if (:list (:options opts))
+      (list-champs)
+      (print-results champ
+        (run (steps (rand-build) energy swap-item 10 0.001))))))
