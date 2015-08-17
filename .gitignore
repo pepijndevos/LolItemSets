@@ -7,5 +7,7 @@ pom.xml.asc
 *.class
 /.lein-*
 /.nrepl-port
-.hgignore
-.hg/
+/resources/public/js
+/out
+/.repl
+*.log
