@@ -1,15 +1,26 @@
-(ns lolitemsets.core)
+(ns lolitemsets.algo
+  (:require-macros [cljs.core.async.macros :refer [go]])
+  (:require
+    [cljs.core.async :refer [put! chan <!]]
+    [clojure.browser.net :as net]
+    [clojure.browser.event :as event]))
 
-(defn resource [fname])
 
-(def items (filter #(empty? (:into %))
-  (resource "item.json")))
-(def champs (resource "champion.json"))
+(defn resource [fname]
+  (let [xhr (net/xhr-connection)
+        state (chan)]
+    (event/listen xhr :complete
+      #(put! state (js->clj
+                       (.getResponseJson (.-target %))
+                       :keywordize-keys true)))
+    (net/transmit xhr (str "http://ddragon.leagueoflegends.com/cdn/5.2.1/data/en_US/" fname))
+    state))
+
+(def item-chan #(resource "item.json"))
+(def champ-chan #(resource "champion.json"))
 
 (def max-level 18)
 (def max-items 5) ; + boots
-
-(def greaves (nth champs 5)) ; test
 
 (defn dps [ad as crit]
   (let [as (min as 2.5)
@@ -75,10 +86,10 @@
   (let [base-ad (max-champ-stat champ :attackdamage :attackdamageperlevel)]
     (+ base-ad ad)))
 
-(defn rand-build []
+(defn rand-build [items]
   (vec (take max-items (repeatedly #(rand-nth items)))))
 
-(defn swap-item [build]
+(defn swap-item [items build]
   (assoc build (rand-int max-items) (rand-nth items)))
 
 (defn item-ad [item] (get-in item [:stats :FlatPhysicalDamageMod] 0))
@@ -134,9 +145,6 @@
               [Sn (* T (- 1.0 dT))]))]
     (iterate step [S0 T])))
 
-(defn list-champs []
-  (dorun (map-indexed #(println %1 (:name %2)) champs)))
-
 (defn print-results [champ build]
   (println "Items:" (map :name build))
   (println "AD/s:" (build-dps champ build))
@@ -150,31 +158,17 @@
   (println "attack speed:" (+ (max-champ-as champ) (build-prop item-as build)))
   (println "crit:" (* 100 (build-prop item-crit build))))
 
-(defn run [s]
-  (ffirst (drop-while (fn [[_ t]] (> t 0.1)) s)))
+(defn run
+ ([s] (run (chan) s))
+ ([ch [[v t] & other]]
+  (if (< t 0.1)
+    (put! ch v)
+    (.setTimeout js/window run 0 ch other))
+  ch))
 
-(defn -main
-  "I don't do a whole lot ... yet."
-  [& args]
-  (let [opts (parse-opts args
-               [[nil "--attack-damage"]
-                [nil "--poke"] ; AP
-                [nil "--life-steal"]
-                [nil "--armor"]
-                [nil "--magic-resist"]
-                [nil "--list"]])
-        chid (Integer. (or (first (:arguments opts)) 0))
-        champ (nth champs chid)
-        energy (map
-                 #(partial % champ)
-                 (remove nil?
-                   [(when (:attack-damage (:options opts)) build-dps)
-                    (when (:life-steal    (:options opts)) build-lsps)
-                    (when (:armor         (:options opts)) build-hp-ad)
-                    (when (:magic-resist  (:options opts)) build-hp-ap)
-                    (when (:poke          (:options opts)) build-poke)
-                    ]))]
-    (if (:list (:options opts))
-      (list-champs)
-      (print-results champ
-        (run (steps (rand-build) energy swap-item 10 0.001))))))
+(defn recommend [items champ props]
+  (let [energy (map #(partial % champ) props)]
+    (run (steps (rand-build items)
+                energy
+                (partial swap-item items)
+                10 0.001))))
