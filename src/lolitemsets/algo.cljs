@@ -1,14 +1,6 @@
-(ns lolitemsets.core
-  (:require
-    [clojure.tools.cli :refer [parse-opts]]
-    [cheshire.core :as json]
-    [clojure.java.io :as io])
-  (:gen-class))
+(ns lolitemsets.core)
 
-(defn resource [fname]
-  (let [stream (io/reader (io/resource fname))
-        data (json/parse-stream stream true)]
-    (->> data :data vals)))
+(defn resource [fname])
 
 (def items (filter #(empty? (:into %))
   (resource "item.json")))
@@ -23,6 +15,14 @@
   (let [as (min as 2.5)
         crit (min crit 1)]
     (+ (* ad 2 crit as) (* ad as))))
+
+; Ideally we would use the actual skill of a champ
+; typical poke skill:
+; 100 mana, 250 + 70% AP
+; AP for mana per minute
+(defn poke [ap mpm]
+  (let [apm (/ (+ 250 (* 0.7 ap)) 100)]
+    (* apm mpm)))
 
 (defn max-champ-stat [champ base-name lvl-name]
   (let [stats (:stats champ)
@@ -44,6 +44,12 @@
       (+ base-ad ad)
       (+ base-as as)
       (+ base-crit crit))))
+
+(defn champ-poke [champ ap mpregen]
+  (let [;base-mana (max-champ-stat champ :mp :mpperlevel)
+        base-mpregen (max-champ-stat champ :mpregen :mpregenperlevel) ; per 5 seconds
+        mpm (* (+ base-mpregen mpregen) 12)]
+    (poke ap mpm)))
 
 (defn champ-hp-ad [champ armor hp]
   (let [base-armor (max-champ-stat champ :armor :armorperlevel)
@@ -82,16 +88,25 @@
 (defn item-mr [item] (get-in item [:stats :FlatSpellBlockMod] 0))
 (defn item-hp [item] (get-in item [:stats :FlatHPPoolMod] 0))
 (defn item-ls [item] (get-in item [:stats :PercentLifeStealMod] 0))
+(defn item-ap [item] (get-in item [:stats :FlatMagicDamageMod] 0))
+(defn item-mpregen [item] (get-in item [:stats :FlatMPRegenMod] 0))
+(defn item-mpregen% [item] (get-in item [:stats :FlatMPRegenMod] 0))
 
 (defn build-prop [prop build]
   (apply + (map prop build)))
 
-(defn build-dps [champ build]
+(defn build-dps [champ build] ; AD per second
   (champ-dps
     champ
     (build-prop item-ad build)
     (build-prop item-as build)
     (build-prop item-crit build)))
+
+(defn build-poke [champ build] ; AP output per minute
+  (champ-poke
+    champ
+    (build-prop item-ap build)
+    (build-prop item-mpregen build)))
 
 (defn build-hp-ad [champ build] ; effecive health
   (champ-hp-ad
@@ -109,13 +124,6 @@
   (* (build-dps champ build)
      (build-prop item-ls build)))
 
-(defn weighted-sum [& fn-weight]
-  (let [fns (take-nth 2 fn-weight)
-        weights (take-nth 2 (rest fn-weight))
-        f1 (apply juxt fns)
-        f2 (fn [s] (apply + (map #(Math/sqrt %) (map * s weights))))]
-    (comp f2 f1)))
-
 ; Multiobjective Simulated Annealing: A Comparative Study to Evolutionary Algorithms
 ; http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.74.2194&rep=rep1&type=pdf
 (defn steps [S0 energy perturb T dT]
@@ -132,6 +140,7 @@
 (defn print-results [champ build]
   (println "Items:" (map :name build))
   (println "AD/s:" (build-dps champ build))
+  (println "AP/m:" (build-poke champ build))
   (println "life steal/s:" (build-lsps champ build))
   (println "Effective life (Armor):" (build-hp-ad champ build))
   (println "Effective life (MR):" (build-hp-ap champ build))
@@ -149,7 +158,7 @@
   [& args]
   (let [opts (parse-opts args
                [[nil "--attack-damage"]
-                [nil "--ability-power"]
+                [nil "--poke"] ; AP
                 [nil "--life-steal"]
                 [nil "--armor"]
                 [nil "--magic-resist"]
@@ -163,6 +172,7 @@
                     (when (:life-steal    (:options opts)) build-lsps)
                     (when (:armor         (:options opts)) build-hp-ad)
                     (when (:magic-resist  (:options opts)) build-hp-ap)
+                    (when (:poke          (:options opts)) build-poke)
                     ]))]
     (if (:list (:options opts))
       (list-champs)
