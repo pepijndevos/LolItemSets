@@ -13,7 +13,9 @@
 
 (defonce app-state (atom {:text "Hello world!"
                           :props #{}
-                          :recommended []}))
+                          :recommended []
+                          :champ-level 18
+                          :num-items 6}))
 
 (go
   (let [champs (<! (algo/champ-chan))
@@ -21,9 +23,9 @@
     (swap! app-state assoc :items items :champs champs)))
 
 (defn champion-select []
-  [:div.form-group
-    [:label "Pick a Champion"]
-    [:select  {:on-change (fn [event]
+  [:label "Pick a Champion"
+    [:select  {:field :list
+               :on-change (fn [event]
                             (swap! app-state
                               #(assoc %1 :champ (get-in %1 [:champs %2]))
                               (keyword (-> event .-target .-value))))}
@@ -36,8 +38,8 @@
                    "_0.jpg")}])
 
 (defn recommend []
-  (let [{:keys [items champ props]} @app-state
-        ch (algo/recommend items champ props)]
+  (let [{:keys [items num-items champ champ-level props]} @app-state
+        ch (algo/recommend items num-items champ champ-level props)]
     (go-loop []
       (when-let [build (<! ch)]
         (swap! app-state assoc :recommended build)
@@ -56,13 +58,22 @@
    name
    [:input {:type :checkbox :on-change toggle}]]))
 
+(defn number-selector [label key max min]
+  [:label label
+    [:input {:type "number"
+             :field :numeric
+             :max max :min min
+             :value (key @app-state)
+             :on-change #(swap! app-state assoc key (int (-> % .-target .-value)))}]])
+
 (defn needlesly-large-button []
-  [:button {:on-click recommend} "Recommend"])
+   [:button {:on-click recommend} "Recommend"])
 
 (defn hello-world []
   [:div
     [:h1 (:text @app-state)]
-    [champion-select]
+    [:div
+      [champion-select]]
     [champion-image]
     [:div
       [objective-checkbox "Attack damaeg per second" algo/build-dps]
@@ -70,6 +81,8 @@
       [objective-checkbox "Ability power" (algo/item-wrapper algo/ability-power)]
       [objective-checkbox "Effective Health (AP)" algo/build-hp-ap]
       [objective-checkbox "Effective Health (AD)" algo/build-hp-ad]]
+    [number-selector "Champion level" :champ-level 18 1]
+    [number-selector "Number of items" :num-items 6 1]
     [needlesly-large-button]
     [item-recommendation]])
 

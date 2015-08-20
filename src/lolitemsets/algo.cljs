@@ -149,12 +149,12 @@
   (put! ch v)
   (if (< t 0.01)
     (close! ch)
-    (.setTimeout js/window run 0 ch (drop 500 other)))
+    (.setTimeout js/window run 0 ch (drop 100 other)))
   ch))
 
-(defn recommend [items champ props]
-  (let [energy (map #(partial % champ 18) props)]
-    (run (steps (rand-build 5 items)
+(defn recommend [items num-items champ level props]
+  (let [energy (map #(partial % champ level) props)]
+    (run (steps (rand-build num-items items)
                 energy
                 (partial swap-item items)
                 10 0.001))))
