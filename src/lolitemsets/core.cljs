@@ -12,7 +12,7 @@
 ;; define your app data so that it doesn't get over-written on reload
 
 (defonce app-state (atom {:text "Hello world!"
-                          :props [algo/build-dps]
+                          :props #{}
                           :recommended []}))
 
 (go
@@ -27,12 +27,12 @@
                             (swap! app-state
                               #(assoc %1 :champ (get-in %1 [:champs %2]))
                               (keyword (-> event .-target .-value))))}
-     (for [[id ch] (:champs @app-state)]
+     (for [[id ch] (sort-by (comp :name val) (:champs @app-state))]
        [:option {:key id :value id} (:name ch)])]])
 
 (defn champion-image []
   [:img {:src (str "http://ddragon.leagueoflegends.com/cdn/img/champion/loading/"
-                   (:id (:champ @app-state))
+                   (:id (:champ @app-state) "Aatrox")
                    "_0.jpg")}])
 
 (defn recommend []
@@ -47,11 +47,29 @@
     [:ul (for [item (:recommended @app-state)]
            [:li (:name item)])])
 
+(defn objective-checkbox [name objective]
+  (letfn [(toggle [event]
+            (swap! app-state update-in [:props]
+                   (if (-> event .-target .-checked) conj disj)
+                   objective))]
+  [:label
+   name
+   [:input {:type :checkbox :on-change toggle}]]))
+
+(defn needlesly-large-button []
+  [:button {:on-click recommend} "Recommend"])
+
 (defn hello-world []
   [:div
     [:h1 (:text @app-state)]
     [champion-select]
     [champion-image]
+    [:div
+      [objective-checkbox "Attack damaeg per second" algo/build-dps]
+      [objective-checkbox "Life Steal per second" algo/build-lsps]
+      [objective-checkbox "Effective Health (AP)" algo/build-hp-ap]
+      [objective-checkbox "Effective Health (AD)" algo/build-hp-ad]]
+    [needlesly-large-button]
     [item-recommendation]])
 
 (reagent/render-component [hello-world]
