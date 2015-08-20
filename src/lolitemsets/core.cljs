@@ -16,8 +16,8 @@
                           :recommended []}))
 
 (go
-  (let [champs (:data (<! (algo/champ-chan)))
-        items (:data (<! (algo/item-chan)))]
+  (let [champs (<! (algo/champ-chan))
+        items (<! (algo/item-chan))]
     (swap! app-state assoc :items items :champs champs)))
 
 (defn champion-select []
@@ -37,7 +37,7 @@
 
 (defn recommend []
   (let [{:keys [items champ props]} @app-state
-        ch (algo/recommend (vals items) champ props)]
+        ch (algo/recommend items champ props)]
     (go-loop []
       (when-let [build (<! ch)]
         (swap! app-state assoc :recommended build)
@@ -45,7 +45,7 @@
 
 (defn item-recommendation []
     [:ul (for [item (:recommended @app-state)]
-           [:li (:name item)])])
+           [:li {:key (:name item)} (:name item)])])
 
 (defn objective-checkbox [name objective]
   (letfn [(toggle [event]

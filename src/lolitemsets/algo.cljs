@@ -16,8 +16,19 @@
     (net/transmit xhr (str "http://ddragon.leagueoflegends.com/cdn/5.2.1/data/en_US/" fname))
     state))
 
-(def item-chan #(resource "item.json"))
-(def champ-chan #(resource "champion.json"))
+(defn item-chan []
+  (go
+    (let [items (vals (:data (<! (resource "item.json"))))]
+      (filter
+        (fn [item]
+          (and
+            (not (seq (:into item)))
+            (:1 (:maps item) true) ; Summoner's Rift only.
+            (:purchasable item true)))
+        items))))
+
+(defn champ-chan []
+  (go (:data (<! (resource "champion.json")))))
 
 (def max-level 18)
 (def max-items 5) ; + boots
@@ -90,7 +101,10 @@
   (vec (take max-items (repeatedly #(rand-nth items)))))
 
 (defn swap-item [items build]
-  (assoc build (rand-int max-items) (rand-nth items)))
+  (let [item (rand-nth items)]
+    (if (some #{item} build)
+      (recur items build)
+      (assoc build (rand-int max-items) item))))
 
 (defn item-ad [item] (get-in item [:stats :FlatPhysicalDamageMod] 0))
 (defn item-crit [item] (get-in item [:stats :FlatCritChanceMod] 0))
@@ -141,7 +155,7 @@
   (letfn [(dominates [i j] (every? identity (map #(<= (% i) (% j)) energy)))
           (step [[S T]]
             (let [S2  (perturb S)
-                  Sn  (if (or (dominates S S2) (> (Math/exp (/ -1 T)) (rand))) S2 S)]
+                  Sn  (if (or (dominates S S2) (> (Math/exp (/ -2 T)) (rand))) S2 S)]
               [Sn (* T (- 1.0 dT))]))]
     (iterate step [S0 T])))
 
