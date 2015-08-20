@@ -1,7 +1,7 @@
 (ns lolitemsets.algo
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require
-    [cljs.core.async :refer [put! chan <!]]
+    [cljs.core.async :refer [put! chan <! close!]]
     [clojure.browser.net :as net]
     [clojure.browser.event :as event]))
 
@@ -141,7 +141,7 @@
   (letfn [(dominates [i j] (every? identity (map #(<= (% i) (% j)) energy)))
           (step [[S T]]
             (let [S2  (perturb S)
-                  Sn  (if (or (dominates S S2) (> (Math/exp (/ -10 T)) (rand))) S2 S)]
+                  Sn  (if (or (dominates S S2) (> (Math/exp (/ -1 T)) (rand))) S2 S)]
               [Sn (* T (- 1.0 dT))]))]
     (iterate step [S0 T])))
 
@@ -161,9 +161,10 @@
 (defn run
  ([s] (run (chan) s))
  ([ch [[v t] & other]]
-  (if (< t 0.1)
-    (put! ch v)
-    (.setTimeout js/window run 0 ch other))
+  (put! ch v)
+  (if (< t 0.01)
+    (close! ch)
+    (.setTimeout js/window run 0 ch (drop 100 other)))
   ch))
 
 (defn recommend [items champ props]

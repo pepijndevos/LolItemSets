@@ -1,5 +1,5 @@
 (ns ^:figwheel-always lolitemsets.core
-  (:require-macros [cljs.core.async.macros :refer [go]])
+  (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require
     [cljs.core.async :refer [put! chan <!]]
     [reagent.core :as reagent :refer [atom]]
@@ -36,10 +36,12 @@
                    "_0.jpg")}])
 
 (defn recommend []
-  (go
-    (let [{:keys [items champ props]} @app-state]
-      (swap! app-state assoc :recommended
-        (<! (algo/recommend (vals items) champ props))))))
+  (let [{:keys [items champ props]} @app-state
+        ch (algo/recommend (vals items) champ props)]
+    (go-loop []
+      (when-let [build (<! ch)]
+        (swap! app-state assoc :recommended build)
+        (recur)))))
 
 (defn item-recommendation []
     [:ul (for [item (:recommended @app-state)]
