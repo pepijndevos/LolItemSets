@@ -67,6 +67,7 @@
     [:div
       [objective-checkbox "Attack damaeg per second" algo/build-dps]
       [objective-checkbox "Life Steal per second" algo/build-lsps]
+      [objective-checkbox "Ability power" (algo/item-wrapper algo/ability-power)]
       [objective-checkbox "Effective Health (AP)" algo/build-hp-ap]
       [objective-checkbox "Effective Health (AD)" algo/build-hp-ad]]
     [needlesly-large-button]
