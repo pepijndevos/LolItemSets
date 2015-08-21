@@ -44,9 +44,15 @@
         (swap! app assoc :recommended build)
         (recur)))))
 
+(defn item-component [item]
+  [:span
+   [:img {:src (data/item-img-url (get-in item [:image :full]))}]
+   (:name item)])
+
 (defn item-recommendation []
-    [:ul (for [item (:recommended @app)]
-           [:li {:key (:name item)} (:name item)])])
+  [:ul (for [item (:recommended @app)]
+         [:li {:key (:name item)}
+          (item-component item)])])
 
 (defn objective-checkbox [name objective]
   (letfn [(toggle [event]

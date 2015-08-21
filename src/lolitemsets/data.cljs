@@ -29,6 +29,11 @@
        champion-name "_" (or skin-number 0)
        ".jpg"))
 
+(defn item-img-url
+  [item-image-ref]  ; items conveniently come with strings of its filename, e.g. "1001.png"
+  (str "http://ddragon.leagueoflegends.com/cdn/5.2.1/img/item/"
+       item-image-ref))
+
 (defn resource [url]
   (let [xhr (net/xhr-connection)
         state (chan)]
