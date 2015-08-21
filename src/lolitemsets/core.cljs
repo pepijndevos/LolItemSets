@@ -12,7 +12,7 @@
 
 ;; define your app data so that it doesn't get over-written on reload
 
-(defonce app (atom {:text "Hello world!"
+(defonce app (atom {:text "LoL Set Forge"
                     :props #{}
                     :recommended []
                     :champ-level 18
@@ -26,7 +26,7 @@
 (go
   (let [champs (<! (data/champ-chan))
         items (<! (data/item-chan))]
-    (swap! app assoc :items items :champs champs)))
+    (swap! app assoc :items items :champs champs :champ (val (first champs)))))
 
 (defn recommend []
   (let [{:keys [items num-items champ champ-level props]} @app
@@ -43,7 +43,7 @@
               {:id (str (:id item)) :count 1})}))
 
 (defn champion-image []
-  [:img.img-rounded {:src (data/champ-img-square-url (get-in @app [:champ :id] "Aatrox"))
+  [:img.img-rounded {:src (data/champ-img-square-url (get-in @app [:champ :id] "Heimerdinger"))
                      :width 64
                      :height 64}])
 
@@ -52,7 +52,8 @@
    [:div.media-left (champion-image)]
    [:div.media-body
     [:h4.media-heading "Make a build for:"]
-    [:select {:on-change (fn [event]
+    [:select {:value (:id (:champ @app))
+              :on-change (fn [event]
                            (swap! app
                                   #(assoc %1 :champ (get-in %1 [:champs %2]))
                                   (keyword (-> event .-target .-value))))}
@@ -102,7 +103,7 @@
       [:tr [:td "Attack damage per second"] [:td (int (algo/build-dps champ champ-level recommended))]]
       [:tr [:td "Attack damage"] [:td (int (algo/attack-damage champ champ-level recommended))]]
       [:tr [:td "Critical strike chance"] [:td (int (* 100 (algo/critical-strike champ champ-level recommended))) "%"]]
-      [:tr [:td "Attack speed"] [:td (algo/attack-speed champ champ-level recommended)]]
+      [:tr [:td "Attack speed"] [:td (.toFixed (algo/attack-speed champ champ-level recommended) 2)]]
       [:tr [:td "Life steal per second"] [:td (int (algo/build-lsps champ champ-level recommended))]]
       [:tr [:td "Life steal"] [:td (int (* 100 (algo/life-steal recommended))) "%"]]
       [:tr [:td "Ability power"] [:td (algo/ability-power recommended)]]
@@ -157,25 +158,27 @@
 
 (defn app-component []
   [:div.container
-   [:div.container.col-sm-6
-    [:h1 (:text @app)]
-    [champion-select] [:br]
-    [objective-checkbox "Attack damage per second" algo/build-dps]
-    [objective-checkbox "Life Steal per second" algo/build-lsps]
-    [objective-checkbox "Ability power" (algo/item-wrapper algo/ability-power)]
-    [objective-checkbox "Effective Health (AP)" algo/build-hp-ap]
-    [objective-checkbox "Effective Health (AD)" algo/build-hp-ad] [:br]
-    [number-selector "Champion level" :champ-level 18 1]
-    [number-selector "Number of items" :num-items 6 1] [:br]
-    [:div.btn-group
-      [button-of-command] ; generate
-      [mirage-button] ; add
-      [needlessly-large-button]] ; download
-    [:br][:br] ; ugly
-    [item-set]]
-   [:div.container.col-sm-6
-    [build-stats]
-    [item-recommendation]]])
+   [:div.row
+    [:h1.col-sm-12 (:text @app)]]
+   [:div.row
+     [:div.col-sm-6
+      [champion-select] [:br]
+      [objective-checkbox "Attack damage per second" algo/build-dps]
+      [objective-checkbox "Life Steal per second" algo/build-lsps]
+      [objective-checkbox "Ability power" (algo/item-wrapper algo/ability-power)]
+      [objective-checkbox "Effective Health (AP)" algo/build-hp-ap]
+      [objective-checkbox "Effective Health (AD)" algo/build-hp-ad] [:br]
+      [number-selector "Champion level" :champ-level 18 1]
+      [number-selector "Number of items" :num-items 6 1] [:br]
+      [:div.btn-group
+        [button-of-command] ; generate
+        [mirage-button] ; add
+        [needlessly-large-button]] ; download
+      [:br][:br] ; ugly
+      [item-set]]
+     [:div.col-sm-6
+      [build-stats]
+      [item-recommendation]]]])
 
 (reagent/render-component [app-component]
                           (. js/document (getElementById "app")))
