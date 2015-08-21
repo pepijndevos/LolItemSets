@@ -46,14 +46,15 @@
 
 (defn item-chan []
   (go
-    (let [items (vals (:data (<! (resource (item-data-url)))))]
-      (filter
-        (fn [item]
-          (and
-            (not (seq (:into item)))
-            (:1 (:maps item) true) ; Summoner's Rift only.
-            (:purchasable item true)))
-        items))))
+    (let [items (:data (<! (resource (item-data-url))))]
+      (->> items
+        (map (fn [[id item]] (assoc item :id (int (name id)))))
+        (filter
+          (fn [item]
+            (and
+              (not (seq (:into item)))
+              (:1 (:maps item) true) ; Summoner's Rift only.
+              (:purchasable item true))))))))
 
 (defn champ-chan []
   (go (:data (<! (resource (champ-data-url))))))
