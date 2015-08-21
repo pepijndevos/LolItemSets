@@ -93,6 +93,41 @@
              :value (key @app)
              :on-change #(swap! app assoc key (int (-> % .-target .-value)))}]]])
 
+(defn build-stats []
+  (let [{:keys [recommended champ champ-level]} @app]
+    [:div.panel.panel-primary
+     [:div.panel-heading "Build statistics"]
+     [:table.table
+      [:tr [:th "Stat"] [:th "Value"]]
+      [:tr [:td "Attack damage per second"] [:td (int (algo/build-dps champ champ-level recommended))]]
+      [:tr [:td "Attack damage"] [:td (int (algo/attack-damage champ champ-level recommended))]]
+      [:tr [:td "Critical strike chance"] [:td (int (* 100 (algo/critical-strike champ champ-level recommended))) "%"]]
+      [:tr [:td "Attack speed"] [:td (algo/attack-speed champ champ-level recommended)]]
+      [:tr [:td "Life steal per second"] [:td (int (algo/build-lsps champ champ-level recommended))]]
+      [:tr [:td "Life steal"] [:td (int (* 100 (algo/life-steal recommended))) "%"]]
+      [:tr [:td "Ability power"] [:td (algo/ability-power recommended)]]
+      [:tr [:td "Effcetive health (AD)"] [:td (int (algo/build-hp-ad champ champ-level recommended))]]
+      [:tr [:td "Effcetive health (AP)"] [:td (int (algo/build-hp-ap champ champ-level recommended))]]
+      [:tr [:td "HP"] [:td (int (algo/health champ champ-level recommended))]]
+      [:tr [:td "Armor"] [:td (int (algo/armor champ champ-level recommended))]]
+      [:tr [:td "Magic resist"] [:td (int (algo/magic-resist champ champ-level recommended))]]
+      ]]))
+
+(defn item-block [id block items]
+  (let [ids (set (map #(int (:id %)) (:items block)))
+       check #(contains? ids (:id %))
+       items (filter check items)]
+   [:div.panel.panel-default {:key id}
+    [:div.panel-heading
+     [:input.form-control
+      {:type "text"
+       :on-change #(swap! app assoc-in [:itemset :blocks id :type] (-> % .-target .-value))
+       :value (:type block)}]]
+      [:div.panel-body
+     (for [item items]
+       [:span {:key (:id item)}
+        (item-image item)])]]))
+
 (defn item-set []
   (let [state @app
         itemset (:itemset state)
@@ -106,19 +141,7 @@
          :value (:title itemset)}]]
       [:div.panel-body
        (for [[id block] blocks]
-         (let [ids (set (map #(int (:id %)) (:items block)))
-               check #(contains? ids (:id %))
-               items (filter check items)]
-           [:div.panel.panel-default {:key id}
-            [:div.panel-heading
-             [:input.form-control
-              {:type "text"
-               :on-change #(swap! app assoc-in [:itemset :blocks id :type] (-> % .-target .-value))
-               :value (:type block)}]]
-              [:div.panel-body
-             (for [item items]
-               [:span {:key (:id item)}
-                (item-image item)])]]))]]))
+         [item-block id block items])]]))
 
 (defn needlessly-large-button []
   (let [blob (js/Blob. #js[(.stringify js/JSON (clj->js (:itemset @app)))]
@@ -150,7 +173,9 @@
       [needlessly-large-button]] ; download
     [:br][:br] ; ugly
     [item-set]]
-   [:div.container.col-sm-6 [item-recommendation]]])
+   [:div.container.col-sm-6
+    [build-stats]
+    [item-recommendation]]])
 
 (reagent/render-component [app-component]
                           (. js/document (getElementById "app")))
