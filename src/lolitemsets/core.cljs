@@ -51,14 +51,22 @@
 
 (defn item-component [item]
   [:div.media
-   [:div.media-left [:img.img-rounded {:src (data/item-img-url (get-in item [:image :full]))
+   [:div.media-left [:img.img-rounded {:src
+                                       (if item
+                                         (data/item-img-url (get-in item [:image :full]))
+                                         "/questionmark.png")
                                        :width 32 :height 32}]]
    [:div.media-body
-    [:h4.media-heading (:name item)]]])
+    [:h4.media-heading (if item
+                         (:name item)
+                         "???")]]])
 
 (defn item-recommendation []
-  [:ul (for [item (:recommended @app)]
-         [:div.well.well-sm {:key (str (:name item) (hash item))}
+  [:ul (for [[i item] (-> (:recommended @app)
+                          (concat (repeat nil))
+                          (->> (take 6)
+                               (map vector (range))))]
+         [:div.well.well-sm {:key (str (:name item) (hash item) i)}
           (item-component item)])])
 
 (defn objective-checkbox [name objective]
