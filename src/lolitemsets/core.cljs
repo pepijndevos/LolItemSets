@@ -3,7 +3,8 @@
   (:require
     [cljs.core.async :refer [put! chan <!]]
     [reagent.core :as reagent :refer [atom]]
-    [lolitemsets.algo :as algo]))
+    [lolitemsets.algo :as algo]
+    [lolitemsets.data :as data]))
 
 (enable-console-print!)
 
@@ -18,8 +19,8 @@
                           :num-items 6}))
 
 (go
-  (let [champs (<! (algo/champ-chan))
-        items (<! (algo/item-chan))]
+  (let [champs (<! (data/champ-chan))
+        items (<! (data/item-chan))]
     (swap! app-state assoc :items items :champs champs)))
 
 (defn champion-select []
@@ -33,9 +34,7 @@
        [:option {:key id :value id} (:name ch)])]])
 
 (defn champion-image []
-  [:img {:src (str "http://ddragon.leagueoflegends.com/cdn/img/champion/loading/"
-                   (:id (:champ @app-state) "Aatrox")
-                   "_0.jpg")}])
+  [:img {:src (data/champ-img-square-url (get-in @app-state [:champ :id] "Aatrox"))}])
 
 (defn recommend []
   (let [{:keys [items num-items champ champ-level props]} @app-state

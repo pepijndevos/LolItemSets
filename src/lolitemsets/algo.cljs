@@ -5,31 +5,6 @@
     [clojure.browser.net :as net]
     [clojure.browser.event :as event]))
 
-
-(defn resource [fname]
-  (let [xhr (net/xhr-connection)
-        state (chan)]
-    (event/listen xhr :complete
-      #(put! state (js->clj
-                       (.getResponseJson (.-target %))
-                       :keywordize-keys true)))
-    (net/transmit xhr (str "http://ddragon.leagueoflegends.com/cdn/5.2.1/data/en_US/" fname))
-    state))
-
-(defn item-chan []
-  (go
-    (let [items (vals (:data (<! (resource "item.json"))))]
-      (filter
-        (fn [item]
-          (and
-            (not (seq (:into item)))
-            (:1 (:maps item) true) ; Summoner's Rift only.
-            (:purchasable item true)))
-        items))))
-
-(defn champ-chan []
-  (go (:data (<! (resource "champion.json")))))
-
 (defn rand-build [n items]
   (vec (take n (repeatedly #(rand-nth items)))))
 
