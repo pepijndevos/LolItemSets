@@ -12,45 +12,45 @@
 
 ;; define your app data so that it doesn't get over-written on reload
 
-(defonce app-state (atom {:text "Hello world!"
-                          :props #{}
-                          :recommended []
-                          :champ-level 18
-                          :num-items 6}))
+(defonce app (atom {:text "Hello world!"
+                    :props #{}
+                    :recommended []
+                    :champ-level 18
+                    :num-items 6}))
 
 (go
   (let [champs (<! (data/champ-chan))
         items (<! (data/item-chan))]
-    (swap! app-state assoc :items items :champs champs)))
+    (swap! app assoc :items items :champs champs)))
 
 (defn champion-select []
   [:label "Pick a Champion"
     [:select  {:field :list
                :on-change (fn [event]
-                            (swap! app-state
+                            (swap! app
                               #(assoc %1 :champ (get-in %1 [:champs %2]))
                               (keyword (-> event .-target .-value))))}
-     (for [[id ch] (sort-by (comp :name val) (:champs @app-state))]
+     (for [[id ch] (sort-by (comp :name val) (:champs @app))]
        [:option {:key id :value id} (:name ch)])]])
 
 (defn champion-image []
-  [:img {:src (data/champ-img-square-url (get-in @app-state [:champ :id] "Aatrox"))}])
+  [:img {:src (data/champ-img-square-url (get-in @app [:champ :id] "Aatrox"))}])
 
 (defn recommend []
-  (let [{:keys [items num-items champ champ-level props]} @app-state
+  (let [{:keys [items num-items champ champ-level props]} @app
         ch (algo/recommend items num-items champ champ-level props)]
     (go-loop []
       (when-let [build (<! ch)]
-        (swap! app-state assoc :recommended build)
+        (swap! app assoc :recommended build)
         (recur)))))
 
 (defn item-recommendation []
-    [:ul (for [item (:recommended @app-state)]
+    [:ul (for [item (:recommended @app)]
            [:li {:key (:name item)} (:name item)])])
 
 (defn objective-checkbox [name objective]
   (letfn [(toggle [event]
-            (swap! app-state update-in [:props]
+            (swap! app update-in [:props]
                    (if (-> event .-target .-checked) conj disj)
                    objective))]
   [:label
@@ -62,15 +62,15 @@
     [:input {:type "number"
              :field :numeric
              :max max :min min
-             :value (key @app-state)
-             :on-change #(swap! app-state assoc key (int (-> % .-target .-value)))}]])
+             :value (key @app)
+             :on-change #(swap! app assoc key (int (-> % .-target .-value)))}]])
 
 (defn needlesly-large-button []
    [:button {:on-click recommend} "Recommend"])
 
 (defn hello-world []
   [:div
-    [:h1 (:text @app-state)]
+    [:h1 (:text @app)]
     [:div
       [champion-select]]
     [champion-image]
@@ -90,8 +90,8 @@
 
 
 (defn on-js-reload []
-  ;; optionally touch your app-state to force rerendering depending on
+  ;; optionally touch your app to force rerendering depending on
   ;; your application
-  ;; (swap! app-state update-in [:__figwheel_counter] inc)
+  ;; (swap! app update-in [:__figwheel_counter] inc)
 )
 
