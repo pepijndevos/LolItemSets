@@ -88,8 +88,8 @@
              :value (key @app)
              :on-change #(swap! app assoc key (int (-> % .-target .-value)))}]]])
 
-(defn needlesly-large-button []
-  [:button {:on-click recommend} "Recommend"])
+(defn needlessly-large-button []
+  [:button.btn.btn-info {:on-click recommend} "Generate build"])
 
 (defn app-component []
   [:div.container
@@ -103,7 +103,7 @@
     [objective-checkbox "Effective Health (AD)" algo/build-hp-ad] [:br]
     [number-selector "Champion level" :champ-level 18 1]
     [number-selector "Number of items" :num-items 6 1] [:br]
-    [needlesly-large-button] [:br]]
+    [needlessly-large-button] [:br]]
    [:div.container.col-sm-6 [item-recommendation]]])
 
 (reagent/render-component [app-component]
