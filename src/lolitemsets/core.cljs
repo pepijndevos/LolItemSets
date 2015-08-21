@@ -59,7 +59,8 @@
    [:div.media-body
     [:h4.media-heading (if item
                          (:name item)
-                         "???")]]])
+                         "???")]
+    [:div {:dangerouslySetInnerHTML {:__html(:description item)}}]]])
 
 (defn item-recommendation []
   [:ul (for [[i item] (-> (:recommended @app)
@@ -70,13 +71,14 @@
           (item-component item)])])
 
 (defn objective-checkbox [name objective]
-  (letfn [(toggle [event]
+  (let [id (str (gensym))
+        toggle (fn [event]
             (swap! app update-in [:props]
                    (if (-> event .-target .-checked) conj disj)
                    objective))]
     [:div.row
-     [:div.col-xs-1 [:input {:type :checkbox :on-change toggle}]]
-     [:span name]]))
+     [:div.col-xs-1 [:input {:type :checkbox :on-change toggle :id id}]]
+     [:label {:for id} name]]))
 
 (defn number-selector [label key max min]
   [:div.row
@@ -111,7 +113,4 @@
 
 
 (defn on-js-reload []
-  ;; optionally touch your app to force rerendering depending on
-  ;; your application
-  ;; (swap! app update-in [:__figwheel_counter] inc)
-)
+  (swap! app assoc :props #{}))
