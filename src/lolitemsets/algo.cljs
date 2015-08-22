@@ -70,35 +70,28 @@
     (attack-speed champ level build)
     (critical-strike champ level build)))
 
-; mana plus mana regen over 5 minutes
-; 5 minutes being an estimate
-; for the time between recalls
-(defn build-disposable-mana [champ level build]
+; mana plus mana regen over session-lenght
+; session-regen being the average time between recalls
+; (and thus mana refills)
+(defn disposable-mana [session-lenght champ level build]
   (+ (mana champ level build)
      (* (mana-regen champ level build)
-        12 5)))
+        12 session-lenght)))
 
-(comment
-; Ideally we would use the actual skill of a champ
-; typical poke skill:
-; 100 mana, 250 + 70% AP
-; AP for mana per minute
-(defn poke [ap mpm]
-  (let [apm (/ (+ 250 (* 0.7 ap)) 100)]
-    (* apm mpm)))
+; Basic abilities cannot be ranked higher than
+; half the level of the champion (rounded up)
+(defn ability-level [level]
+  (min 5 (.ceil js/Math (/ level 2))))
 
-(defn champ-poke [champ ap mpregen]
-  (let [;base-mana (max-champ-stat champ :mp :mpperlevel)
-        base-mpregen (max-champ-stat champ :mpregen :mpregenperlevel) ; per 5 seconds
-        mpm (* (+ base-mpregen mpregen) 12)]
-    (poke ap mpm)))
+; Champion-specific poke damage per minute
+(defmulti poke (fn [champ level build] (:id champ)))
 
-(defn build-poke [champ build] ; AP output per minute
-  (champ-poke
-    champ
-    (build-prop item-ap build)
-    (build-prop item-mpregen build)))
-)
+(defmethod poke :default [champ level build] 0)
+
+; Champion-specific burst damage
+(defmulti burst (fn [champ level build] (:id champ)))
+
+(defmethod burst :default [champ level build] 0)
 
 (defn effective-health [defence hp]
   (+ hp

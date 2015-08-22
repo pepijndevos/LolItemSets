@@ -117,6 +117,8 @@
       [:tr [:td "Magic resist"] [:td (int (algo/magic-resist champ champ-level recommended))]]
       [:tr [:td "Mana"] [:td (int (algo/mana champ champ-level recommended))]]
       [:tr [:td "Mana regeneration over 5 seconds"] [:td (int (algo/mana-regen champ champ-level recommended))]]
+      [:tr [:td "Burst"] [:td (int (algo/burst champ champ-level recommended))]]
+      [:tr [:td "Poke per minute"] [:td (int (algo/poke champ champ-level recommended))]]
       ]]))
 
 (defn item-block [id block items]
@@ -171,7 +173,9 @@
       [objective-checkbox "Attack damage per second" algo/build-dps]
       [objective-checkbox "Life Steal per second" algo/build-lsps]
       [objective-checkbox "Ability power" (algo/item-wrapper algo/ability-power)]
-      [objective-checkbox "Disposable mana" algo/build-disposable-mana]
+      [objective-checkbox "Mana" algo/mana]
+      [objective-checkbox "Poke per minute" algo/poke]
+      [objective-checkbox "Burst" algo/burst]
       [objective-checkbox "Effective Health (AP)" algo/build-hp-ap]
       [objective-checkbox "Effective Health (AD)" algo/build-hp-ad] [:br]
       [number-selector "Champion level" :champ-level 18 1]
