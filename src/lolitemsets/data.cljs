@@ -2,8 +2,7 @@
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require
     [cljs.core.async :refer [put! chan <! close!]]
-    [clojure.browser.net :as net]
-    [clojure.browser.event :as event]))
+    [cljs-http.client :as http]))
 
 (defn item-data-url []
   "http://ddragon.leagueoflegends.com/cdn/5.2.1/data/en_US/item.json")
@@ -35,14 +34,8 @@
        item-image-ref))
 
 (defn resource [url]
-  (let [xhr (net/xhr-connection)
-        state (chan)]
-    (event/listen xhr :complete
-      #(put! state (js->clj
-                       (.getResponseJson (.-target %))
-                       :keywordize-keys true)))
-    (net/transmit xhr url)
-    state))
+  (cljs-http.client/get url {:with-credentials? false
+                             :channel (chan 1 (map :body))}))
 
 (defn item-chan []
   (go
