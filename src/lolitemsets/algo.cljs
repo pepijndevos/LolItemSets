@@ -1,9 +1,7 @@
 (ns lolitemsets.algo
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require
-    [cljs.core.async :refer [put! chan <! close!]]
-    [clojure.browser.net :as net]
-    [clojure.browser.event :as event]))
+    [cljs.core.async :refer [put! chan <! close!]]))
 
 (defn rand-build [n items]
   (vec (take n (repeatedly #(rand-nth items)))))
@@ -23,10 +21,14 @@
         per-level (get stats lvl-name 0)]
     (+ base (* level per-level))))
 
-(defn build-stat [base-name lvl-name item-flat item-percent champ level build]
+(defmulti build-stat (fn build-stat* [base-name lvl-name item-flat item-percent champ level build] [(:id champ) base-name]))
+
+(defmethod build-stat :default [base-name lvl-name item-flat item-percent champ level build]
   (* (+ (champ-stat champ level base-name lvl-name)
         (items-stat item-flat build))
      (+ 1 (items-stat item-percent build))))
+
+(def build-stat* (get-method build-stat :default))
 
 (def attack-damage (partial build-stat :attackdamage :attackdamageperlevel :FlatPhysicalDamageMod :PercentPhysicalDamageMod))
 (def critical-strike (partial build-stat :crit :critperlevel :FlatCritChanceMod :PercentCritChanceMod))

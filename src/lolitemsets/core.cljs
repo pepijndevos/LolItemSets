@@ -4,6 +4,7 @@
     [cljs.core.async :refer [put! chan <!]]
     [reagent.core :as reagent :refer [atom]]
     [lolitemsets.algo :as algo]
+    [lolitemsets.overlay :as overlay]
     [lolitemsets.data :as data]))
 
 (enable-console-print!)
