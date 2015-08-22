@@ -33,6 +33,8 @@
 (def armor (partial build-stat :armor :armorperlevel :FlatArmorMod :PercentArmorMod))
 (def magic-resist (partial build-stat :spellblock :spellblockperlevel :FlatSpellBlockMod :PercentSpellBlockMod))
 (def health (partial build-stat :hp :hpperlevel :FlatHPPoolMod :PercentHPPoolMod))
+(def mana (partial build-stat :mp :mpperlevel :FlatMPPoolMod :PercentMPPoolMod))
+(def mana-regen (partial build-stat :mpregen :mpregenperlevel :FlatMPRegenMod :PercentMPRegenMod))
 
 (defn item-wrapper [stat]
   (fn [champ level build] (stat build)))
@@ -65,6 +67,14 @@
     (attack-damage champ level build)
     (attack-speed champ level build)
     (critical-strike champ level build)))
+
+; mana plus mana regen over 5 minutes
+; 5 minutes being an estimate
+; for the time between recalls
+(defn build-disposable-mana [champ level build]
+  (+ (mana champ level build)
+     (* (mana-regen champ level build)
+        12 5)))
 
 (comment
 ; Ideally we would use the actual skill of a champ

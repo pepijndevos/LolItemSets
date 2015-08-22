@@ -24,8 +24,10 @@
                               :blocks []}}))
 
 (go
-  (let [champs (<! (data/champ-chan))
-        items (<! (data/item-chan))]
+  (let [champ-chan (data/champ-chan)
+        item-chan (data/item-chan)
+        champs (<! champ-chan)
+        items (<! item-chan)]
     (swap! app assoc :items items :champs champs :champ (val (first champs)))))
 
 (defn recommend []
@@ -112,6 +114,8 @@
       [:tr [:td "HP"] [:td (int (algo/health champ champ-level recommended))]]
       [:tr [:td "Armor"] [:td (int (algo/armor champ champ-level recommended))]]
       [:tr [:td "Magic resist"] [:td (int (algo/magic-resist champ champ-level recommended))]]
+      [:tr [:td "Mana"] [:td (int (algo/mana champ champ-level recommended))]]
+      [:tr [:td "Mana regeneration over 5 seconds"] [:td (int (algo/mana-regen champ champ-level recommended))]]
       ]]))
 
 (defn item-block [id block items]
@@ -166,6 +170,7 @@
       [objective-checkbox "Attack damage per second" algo/build-dps]
       [objective-checkbox "Life Steal per second" algo/build-lsps]
       [objective-checkbox "Ability power" (algo/item-wrapper algo/ability-power)]
+      [objective-checkbox "Disposable mana" algo/build-disposable-mana]
       [objective-checkbox "Effective Health (AP)" algo/build-hp-ap]
       [objective-checkbox "Effective Health (AD)" algo/build-hp-ad] [:br]
       [number-selector "Champion level" :champ-level 18 1]
