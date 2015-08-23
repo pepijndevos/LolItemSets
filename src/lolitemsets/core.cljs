@@ -119,6 +119,7 @@
       [:tr [:td "Mana regeneration over 5 seconds"] [:td (int (algo/mana-regen champ champ-level recommended))]]
       [:tr [:td "Burst"] [:td (int (algo/burst champ champ-level recommended))]]
       [:tr [:td "Poke per minute"] [:td (int (algo/poke champ champ-level recommended))]]
+      [:tr [:td "Gold"] [:td (- (algo/cost recommended))]]
       ]]))
 
 (defn item-block [id block items]
@@ -170,6 +171,7 @@
    [:div.row
      [:div.col-sm-6
       [champion-select] [:br]
+      [objective-checkbox "Gold" (algo/item-wrapper algo/cost)]
       [objective-checkbox "Attack damage per second" algo/build-dps]
       [objective-checkbox "Life Steal per second" algo/build-lsps]
       [objective-checkbox "Ability power" (algo/item-wrapper algo/ability-power)]

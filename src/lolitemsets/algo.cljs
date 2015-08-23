@@ -59,6 +59,11 @@
         (items-stat :FlatAttackSpeedMod build))
      (+ 1 (items-stat :PercentAttackSpeedMod build))))
 
+; This produces terrible results
+; We should do gold *efficiency*
+(defn cost [build]
+  (- (apply + (map #(get-in % [:gold :total] 0) build))))
+
 (defn dps [ad as crit]
   (let [as (min as 2.5)
         crit (min crit 1)]
