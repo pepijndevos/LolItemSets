@@ -87,7 +87,11 @@
   [:div.media.well.well-sm {:key (:id item)}
    [:div.media-left [item-image item]]
    [:div.media-body
-    [:h4.media-heading [item-select idx item]]
+    [:h4.media-heading
+     [item-select idx item]
+     [:sapn
+      [:img {:src (data/gold-url)}]
+      (:total (:gold item))]]
     [:div {:dangerouslySetInnerHTML {:__html (:description item)}}]]])
 
 (defn item-recommendation []

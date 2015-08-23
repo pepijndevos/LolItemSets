@@ -11,6 +11,9 @@
 (defn champ-data-url []
   "http://ddragon.leagueoflegends.com/cdn/5.2.1/data/en_US/champion.json")
 
+(defn gold-url []
+  "http://ddragon.leagueoflegends.com/cdn/5.2.1/img/ui/gold.png")
+
 (defn champ-img-square-url
   [champion-name]
   (str "http://ddragon.leagueoflegends.com/cdn/5.2.1/img/champion/"
