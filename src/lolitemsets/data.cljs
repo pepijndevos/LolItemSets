@@ -48,7 +48,7 @@
           (fn [[id item]]
             (and
               ;(not (seq (:into item)))
-              (> (:depth item) 1)
+              ;(> (:depth item) 1)
               (:1 (:maps item) true) ; Summoner's Rift only.
               (:purchasable (:gold item) true)
               (not (:requiredChampion item)))))

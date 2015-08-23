@@ -9,8 +9,6 @@
 
 (enable-console-print!)
 
-(println "Edits to this text should show up in your developer console.")
-
 ;; define your app data so that it doesn't get over-written on reload
 
 (defonce app (atom {:text "LoL Set Forge"
@@ -22,7 +20,14 @@
                               :type "custom"
                               :map "any"
                               :mode "any"
-                              :blocks []}}))
+                              :blocks [{:type "Starting items"
+                                        :items [{:id "1001" :count 1}
+                                                {:id "1054" :count 1}
+                                                {:id "1055" :count 1}
+                                                {:id "1056" :count 1}
+                                                {:id "2003" :count 1}
+                                                {:id "2004" :count 1}
+                                                {:id "3340" :count 1}]}]}}))
 
 (go
   (let [champ-chan (data/champ-chan)
@@ -161,7 +166,7 @@
          :value (:title itemset)}]]
       [:div.panel-body
        (for [[id block] blocks]
-         [item-block id block items])]]))
+         (item-block id block items))]]))
 
 (defn needlessly-large-button []
   (let [blob (js/Blob. #js[(.stringify js/JSON (clj->js (:itemset @app)))]
