@@ -33,7 +33,7 @@
 
 (defn recommend []
   (let [{:keys [items num-items champ champ-level props]} @app
-        ch (algo/recommend items num-items champ champ-level props)]
+        ch (algo/recommend (vals items) num-items champ champ-level props)]
     (go-loop []
       (when-let [build (<! ch)]
         (swap! app assoc :recommended build)
@@ -63,20 +63,33 @@
      (for [[id ch] (sort-by (comp :name val) (:champs @app))]
        [:option {:key id :value id} (:name ch)])]]])
 
+(defn item-select [idx item]
+  [:select {:value (:id item)
+            :on-change (fn [event]
+                         (swap! app
+                                #(assoc-in %
+                                   [:recommended idx]
+                                   (get-in % [:items %2]))
+                                (int (-> event .-target .-value))))}
+   (for [[id {name :name}] (sort-by (comp :name val) (:items @app))]
+     [:option {:key id :value id} name])])
+
 (defn item-image [item]
   [:img.img-rounded {:src (data/item-img-url (get-in item [:image :full]))
                      :width 64 :height 64}])
 
-(defn item-component [item]
+(defn item-component [idx item]
   [:div.media.well.well-sm {:key (:id item)}
    [:div.media-left [item-image item]]
    [:div.media-body
-    [:h4.media-heading (:name item)]
-    [:div {:dangerouslySetInnerHTML {:__html(:description item)}}]]])
+    [:h4.media-heading [item-select idx item]]
+    [:div {:dangerouslySetInnerHTML {:__html (:description item)}}]]])
 
 (defn item-recommendation []
-  [:ul.media-list (for [item (:recommended @app)]
-          (item-component item))])
+  [:div.media-list
+   (map item-component
+        (range)
+        (:recommended @app))])
 
 (defn objective-checkbox [name objective]
   (let [id (str (gensym))
@@ -122,10 +135,8 @@
       [:tr [:td "Gold"] [:td (- (algo/cost recommended))]]
       ]]))
 
-(defn item-block [id block items]
-  (let [ids (set (map #(int (:id %)) (:items block)))
-       check #(contains? ids (:id %))
-       items (filter check items)]
+(defn item-block [id block all-items]
+  (let [items (map #(get all-items (int (:id %))) (:items block))]
    [:div.panel.panel-default {:key id}
     [:div.panel-heading
      [:input.form-control

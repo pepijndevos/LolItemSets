@@ -42,16 +42,17 @@
   (go
     (let [items (:data (<! (resource (item-data-url))))]
       (->> items
-        (map (fn [[id item]] (assoc item :id (int (name id)))))
-        (map (fn [item] (merge-with merge item (get item-overlay (:id item)))))
+        (map (fn [[id item]] [(int (name id)) (assoc item :id (int (name id)))]))
+        (map (fn [[id item]] [id (merge-with merge item (get item-overlay (:id item)))]))
         (filter
-          (fn [item]
+          (fn [[id item]]
             (and
               ;(not (seq (:into item)))
               (> (:depth item) 1)
               (:1 (:maps item) true) ; Summoner's Rift only.
               (:purchasable (:gold item) true)
-              (not (:requiredChampion item)))))))))
+              (not (:requiredChampion item)))))
+        (into {})))))
 
 (defn champ-chan []
   (go (:data (<! (resource (champ-data-url))))))
