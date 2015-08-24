@@ -187,11 +187,18 @@
 (defn app-component []
   [:div.container
    [:div.row
-    [:h1.col-sm-12 (:text @app)]]
+    [:h1.col-sm-6 (:text @app)]
+    [:div.col-sm-6
+      [:br]
+      [:a {:href "https://github.com/pepijndevos/LolItemSets#usage"}
+       [:span.glyphicon.glyphicon-question-sign] " About"]]]
    [:div.row
      [:div.col-sm-6
-      [champion-select] [:br]
-      [objective-checkbox "Gold" (algo/item-wrapper algo/cost)]
+      [champion-select]
+      [:h4 "Objectives "
+       [:a.glyphicon.glyphicon-question-sign
+        {:href "https://github.com/pepijndevos/LolItemSets#objectives"}]]
+      ;[objective-checkbox "Gold" (algo/item-wrapper algo/cost)]
       [objective-checkbox "Attack damage per second" algo/build-dps]
       [objective-checkbox "Life Steal per second" algo/build-lsps]
       [objective-checkbox "Ability power" (algo/item-wrapper algo/ability-power)]
@@ -206,7 +213,14 @@
         [button-of-command] ; generate
         [mirage-button] ; add
         [needlessly-large-button]] ; download
-      [:br][:br] ; ugly
+      [:p 
+       "Save inside your League of Legends folder in "
+       [:code
+        "Config/Champions/" 
+        (:id (:champ @app))
+        "/Recommended/" 
+        (:title (:itemset @app))
+        ".json"]]
       [item-set]]
      [:div.col-sm-6
       [build-stats]
