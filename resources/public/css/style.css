@@ -10,3 +10,7 @@ h4 select {
   font-size: 18px;
   border: black;
 }
+
+.media-left img {
+  background-image: url(../questionmark.png);
+}

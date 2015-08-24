@@ -12,7 +12,7 @@
 ;; define your app data so that it doesn't get over-written on reload
 
 (defonce app (atom {:text "LoL Set Forge"
-                    :props #{}
+                    :props {}
                     :recommended []
                     :champ-level 18
                     :num-items 6
@@ -38,7 +38,7 @@
 
 (defn recommend []
   (let [{:keys [items num-items champ champ-level props]} @app
-        ch (algo/recommend (vals items) num-items champ champ-level props)]
+        ch (algo/recommend (vals items) num-items champ champ-level (vals props))]
     (go-loop []
       (when-let [build (<! ch)]
         (swap! app assoc :recommended build)
@@ -80,7 +80,9 @@
      [:option {:key id :value id} name])])
 
 (defn item-image [item]
-  [:img.img-rounded {:src (data/item-img-url (get-in item [:image :full]))
+  [:img.img-rounded {:src (if item
+                            (data/item-img-url (get-in item [:image :full]))
+                            "questionmark.png")
                      :width 64 :height 64}])
 
 (defn item-component [idx item]
@@ -104,8 +106,9 @@
   (let [id (str (gensym))
         toggle (fn [event]
             (swap! app update-in [:props]
-                   (if (-> event .-target .-checked) conj disj)
-                   objective))]
+                   (if (-> event .-target .-checked)
+                     #(assoc % name objective)
+                     #(dissoc % name))))]
     [:div.row
      [:div.col-xs-1 [:input {:type :checkbox :on-change toggle :id id}]]
      [:label {:for id} name]]))
@@ -231,4 +234,4 @@
 
 
 (defn on-js-reload []
-  (swap! app assoc :props #{}))
+  (swap! app assoc :props {}))
