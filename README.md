@@ -57,6 +57,11 @@ You could generate one set that contains all your objectives, but you need to be
 
 This tool does not model everything and certainly not your specific play-style and taste. Change a few items in the generated build, and see how they influence the statistics.
 
+## I'm bored!
+
+Click the troll button. This will pick a random champion and objective, generate a build, and download it.
+All you have to do is play it. Best used with friends, to not upset your team mates with your AD Tresh.
+
 ## Disclaimer
 
 LoL Item Set Forge isn’t endorsed by Riot Games and doesn’t reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc. League of Legends © Riot Games, Inc.

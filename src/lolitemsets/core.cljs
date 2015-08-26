@@ -50,6 +50,25 @@
      :items (for [item (:recommended @app)]
               {:id (str (:id item)) :count 1})}))
 
+(defn set-url []
+  (let [blob (js/Blob. #js[(.stringify js/JSON (clj->js (:itemset @app)))]
+                       #js{:type "application/json"})]
+    (.createObjectURL js/URL blob)))
+
+(def troll-objectives {
+"Attack damage per second" algo/build-dps
+"Ability power" (algo/item-wrapper algo/ability-power)
+"Effective Health (AP)" algo/build-hp-ap
+"Effective Health (AD)" algo/build-hp-ad})
+
+(defn troll []
+  (swap! app #(assoc % :champ (rand-nth (vals (:champs %)))
+                       :props (conj {} (rand-nth (seq troll-objectives)))))
+  (go
+    (<! (recommend))
+    (add-block)
+    (set! (.-location js/window) (set-url))))
+
 (defn champion-image []
   [:img.img-rounded {:src (data/champ-img-square-url (get-in @app [:champ :id] "Heimerdinger"))
                      :width 64
@@ -110,7 +129,9 @@
                      #(assoc % name objective)
                      #(dissoc % name))))]
     [:div.row
-     [:div.col-xs-1 [:input {:type :checkbox :on-change toggle :id id}]]
+     [:div.col-xs-1 [:input {:type :checkbox
+                             :checked (contains? (:props @app) name) 
+                             :on-change toggle :id id}]]
      [:label {:for id} name]]))
 
 (defn number-selector [label key max min]
@@ -175,11 +196,11 @@
        (for [[id block] blocks]
          (item-block id block items))]]))
 
+(defn dorans-button []
+  [:button.btn.btn-default.btn-xl {:on-click troll} "Troll"])
+
 (defn needlessly-large-button []
-  (let [blob (js/Blob. #js[(.stringify js/JSON (clj->js (:itemset @app)))]
-                       #js{:type "application/json"})
-        url (.createObjectURL js/URL blob)]
-    [:a.btn.btn-default.btn-xl {:href url :download "build.json"} "Download"]))
+  [:a.btn.btn-default.btn-xl {:href (set-url) :download "build.json"} "Download"])
 
 (defn mirage-button []
   [:button.btn.btn-default.btn-xl {:on-click add-block} "Add to set"])
@@ -214,6 +235,7 @@
       [number-selector "Number of items" :num-items 6 1] [:br]
       [:div.btn-group
         [button-of-command] ; generate
+        [dorans-button] ; troll
         [mirage-button] ; add
         [needlessly-large-button]] ; download
       [:p 
