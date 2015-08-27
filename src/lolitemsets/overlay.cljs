@@ -18,6 +18,49 @@
 
    3190 {:stats {:FlatSpellBlockMod 35}} ;Locket of the Iron Solari
    3060 {:stats {:FlatSpellBlockMod 35}} ;Banner of Command
+
+   ; Missing maps data from recent item data
+   3452 {:maps {:12 false, :1 false, :10 false}},
+   3073 {:maps {:12 false, :1 false, :10 false}},
+   3181 {:maps {:1 false}},
+   3454 {:maps {:12 false, :1 false, :10 false}},
+   3084 {:maps {:12 false, :1 false}},
+   2047 {:maps {:1 false}},
+   1063 {:maps {:12 false, :1 false, :10 false}},
+   1062 {:maps {:12 false, :1 false, :10 false}},
+   3170 {:maps {:12 false, :1 false}},
+   3043 {:maps {:12 false, :1 false, :10 false}},
+   3029 {:maps {:12 false, :1 false, :10 false}},
+   3420 {:maps {:1 false}},
+   3048 {:maps {:12 false, :1 false, :10 false}},
+   3007 {:maps {:12 false, :1 false, :10 false}},
+   3187 {:maps {:1 false}},
+   3422 {:maps {:1 false}},
+   3104 {:maps {:12 false, :1 false}},
+   3421 {:maps {:1 false}},
+   1075 {:maps {:1 false, :10 false}},
+   3137 {:maps {:12 false, :1 false}},
+   3451 {:maps {:12 false, :1 false, :10 false}},
+   2051 {:maps {:1 false, :10 false}},
+   1076 {:maps {:1 false, :10 false}},
+   3450 {:maps {:12 false, :1 false, :10 false}},
+   3184 {:maps {:1 false, :10 false}},
+   3185 {:maps {:1 false}},
+   1074 {:maps {:1 false, :10 false}},
+   3418 {:maps {:1 false}},
+   3417 {:maps {:1 false}},
+   3419 {:maps {:1 false}},
+   3180 {:maps {:12 false, :1 false, :10 false}},
+   3460 {:maps {:12 false, :1 false, :10 false}},
+   3290 {:maps {:12 false, :1 false}},
+   3345 {:maps {:12 false, :1 false, :10 false}},
+   3159 {:maps {:12 false, :1 false}},
+   3090 {:maps {:12 false, :1 false}},
+   3112 {:maps {:1 false, :10 false}},
+   3188 {:maps {:12 false, :1 false, :10 false}},
+   3122 {:maps {:1 false}},
+   3008 {:maps {:12 false, :1 false, :10 false}},
+   3453 {:maps {:12 false, :1 false, :10 false}}
    })
 
 ; Singed gains 25% mana as health

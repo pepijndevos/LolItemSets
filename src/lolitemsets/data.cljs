@@ -6,17 +6,17 @@
     [cljs-http.client :as http]))
 
 (defn item-data-url []
-  "http://ddragon.leagueoflegends.com/cdn/5.2.1/data/en_US/item.json")
+  "http://ddragon.leagueoflegends.com/cdn/5.16.1/data/en_US/item.json")
 
 (defn champ-data-url []
-  "http://ddragon.leagueoflegends.com/cdn/5.2.1/data/en_US/champion.json")
+  "http://ddragon.leagueoflegends.com/cdn/5.16.1/data/en_US/champion.json")
 
 (defn gold-url []
   "http://ddragon.leagueoflegends.com/cdn/5.2.1/img/ui/gold.png")
 
 (defn champ-img-square-url
   [champion-name]
-  (str "http://ddragon.leagueoflegends.com/cdn/5.2.1/img/champion/"
+  (str "http://ddragon.leagueoflegends.com/cdn/5.16.1/img/champion/"
        champion-name
        ".png"))
 
@@ -34,7 +34,7 @@
 
 (defn item-img-url
   [item-image-ref]  ; items conveniently come with strings of its filename, e.g. "1001.png"
-  (str "http://ddragon.leagueoflegends.com/cdn/5.2.1/img/item/"
+  (str "http://ddragon.leagueoflegends.com/cdn/5.16.1/img/item/"
        item-image-ref))
 
 (defn resource [url]
