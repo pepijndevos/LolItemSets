@@ -197,16 +197,16 @@
          (item-block id block items))]]))
 
 (defn dorans-button []
-  [:button.btn.btn-default.btn-xl {:on-click troll} "Troll"])
+  [:a.btn.btn-danger.btn-xl {:on-click troll} "Troll"])
 
 (defn needlessly-large-button []
   [:a.btn.btn-default.btn-xl {:href (set-url) :download "build.json"} "Download"])
 
 (defn mirage-button []
-  [:button.btn.btn-default.btn-xl {:on-click add-block} "Add to set"])
+  [:a.btn.btn-default.btn-xl {:on-click add-block} "Add to set"])
 
 (defn button-of-command []
-  [:button.btn.btn-primary.btn-xl {:on-click recommend} "Generate build"])
+  [:a.btn.btn-primary.btn-xl {:on-click recommend} "Generate build"])
 
 (defn app-component []
   [:div.container
@@ -233,7 +233,7 @@
       [objective-checkbox "Effective Health (AD)" algo/build-hp-ad] [:br]
       [number-selector "Champion level" :champ-level 18 1]
       [number-selector "Number of items" :num-items 6 1] [:br]
-      [:div.btn-group
+      [:div.btn-group.btn-group-justified
         [button-of-command] ; generate
         [dorans-button] ; troll
         [mirage-button] ; add
@@ -255,5 +255,4 @@
                           (. js/document (getElementById "app")))
 
 
-(defn on-js-reload []
-  (swap! app assoc :props {}))
+(defn on-js-reload [])
