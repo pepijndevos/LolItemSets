@@ -58,6 +58,8 @@
 (def troll-objectives {
 "Attack damage per second" algo/build-dps
 "Ability power" (algo/item-wrapper algo/ability-power)
+"Mana" algo/mana
+"Movement speed" algo/move-speed
 "Effective Health (AP)" algo/build-hp-ap
 "Effective Health (AD)" algo/build-hp-ad})
 
