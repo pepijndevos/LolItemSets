@@ -37,12 +37,25 @@
 (def health (partial build-stat :hp :hpperlevel :FlatHPPoolMod :PercentHPPoolMod))
 (def mana (partial build-stat :mp :mpperlevel :FlatMPPoolMod :PercentMPPoolMod))
 (def mana-regen (partial build-stat :mpregen :mpregenperlevel :FlatMPRegenMod :PercentMPRegenMod))
+; Slightly wrong. Percentages are multiplicative.
+(def move-speed* (partial build-stat :movespeed nil :FlatMovementSpeedMod :PercentMovementSpeedMod))
 
 (defn item-wrapper [stat]
   (fn [champ level build] (stat build)))
 
 (def life-steal (partial items-stat :PercentLifeStealMod))
 (def ability-power (partial items-stat :FlatMagicDamageMod))
+
+(defn one-boot [build]
+  (let [split (juxt filter remove)
+        [boots other] (split #(some #{"Boots"} (:tags %)) build)]
+    (println boots)
+    (if (seq boots)
+      (cons (first boots) other)
+      build)))
+
+(defn move-speed [champ level build]
+  (move-speed* champ level (one-boot build)))
 
 ; attack speed is a little weird
 ; 0.625

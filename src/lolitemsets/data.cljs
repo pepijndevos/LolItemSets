@@ -54,6 +54,7 @@
               ;(> (:depth item) 1)
               (:1 (:maps item) true) ; Summoner's Rift only.
               (not (some #{"Bilgewater"} (:tags item)))
+              (not (:hideFromAll item))
               (:purchasable (:gold item) true)
               (not (:requiredChampion item)))))
         (into {})))))

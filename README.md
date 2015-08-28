@@ -8,7 +8,7 @@ Optimal item sets are an [multi-objective optimisation problem](https://en.wikip
 
 1. Install [Leiningen](http://leiningen.org/#install).
 2. run `lein figwheel`
-3. Profit
+3. [Profit](http://localhost:3449)
 
 ## Usage
 
@@ -25,13 +25,23 @@ Optimal item sets are an [multi-objective optimisation problem](https://en.wikip
 
 ## Objectives
 
+### Simple
+
+* Ability power
+* Mana
+* Movement speed
+
+### Compound
+
 * Attack damage per second: The amount of auto-attack damage per second, taking into account attack speed and chance to critical strike.
 * Life-steal per second: The amount of life stolen given your DPS. Does not take into account enemy armour.
-* Ability power: What it says on the tin
-* Mana: What it says on the tin
 * Poke per minute: Champion defined damage of some ability, taking into account cool-down, mana (regen) and AP/AD scaling factor.
 * Burst: Potential damage of a champion defined ability combo.
 * Effective Health (AP/AD): A combination of health and armour/magic-resist.
+
+Poke/burst are currently only implemented for
+
+* Singed
 
 ## How to make good builds
 
