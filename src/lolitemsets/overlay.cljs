@@ -8,7 +8,7 @@
    3092 {:stats {:PercentMPRegenMod 0.5}} ;Frost Queen's Claim
    3222 {:stats {:PercentMPRegenMod 1}} ;Mikael's Crucible
    3165 {:stats {:PercentMPRegenMod 1}} ;Morellonomicon
-   3069 {:stats {:PercentMPRegenMod 1}} ;Talisman of Ascension
+   3069 {:stats {:PercentMPRegenMod 1 :FlatMovementSpeedMod 20}} ;Talisman of Ascension
 
    3003 {:stats {:PercentMPRegenMod 0.5 :FlatMPPoolMod 1000}} ;Archangel's Staff - stacked
    3004 {:stats {:PercentMPRegenMod 0.25 :FlatMPPoolMod 1000}} ;Manamune - stacked
