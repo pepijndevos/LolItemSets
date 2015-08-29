@@ -104,7 +104,8 @@
   [:img.img-rounded {:src (if item
                             (data/item-img-url (get-in item [:image :full]))
                             "questionmark.png")
-                     :width 64 :height 64}])
+                     :width 64 :height 64
+                     :title (:name item)}])
 
 (defn item-component [idx item]
   [:div.media.well.well-sm {:key (:id item)}
@@ -199,6 +200,23 @@
        (for [[id block] blocks]
          (item-block id block items))]]))
 
+(defn build-step [id items]
+   [:div.panel.panel-default {:key id}
+    [:div.panel-heading "Step " id]
+    [:div.panel-body
+     (for [[id item] (map vector (range) items)]
+       [:span {:key id}
+        (item-image item)])]])
+
+(defn build-steps []
+  (let [{:keys [items champ champ-level props recommended]} @app
+        path (algo/build-path items champ champ-level (vals props) recommended)]
+    [:div.panel.panel-default
+      [:div.panel-heading "Build Path"]
+      [:div.panel-body
+       (for [[id step] (map vector (range) (reverse path))]
+         (build-step id step))]]))
+
 (defn dorans-button []
   [:a.btn.btn-danger.btn-xl {:on-click troll} "Troll"])
 
@@ -250,7 +268,8 @@
         "/Recommended/" 
         (:title (:itemset @app))
         ".json"]]
-      [item-set]]
+      [item-set]
+      [build-steps]]
      [:div.col-sm-6
       [build-stats]
       [item-recommendation]]]])

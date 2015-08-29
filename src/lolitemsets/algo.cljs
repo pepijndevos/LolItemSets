@@ -156,3 +156,29 @@
                 energy
                 (partial swap-item items)
                 10 0.001))))
+
+; Generate build path
+
+(defn breakdown [items item]
+  (map #(get items (int %)) (:from item)))
+
+(defn remove-nth [v n]
+  (into (subvec v 0 n) (subvec v (inc n))))
+
+(defn breakdown-nth [items build n]
+  (into (remove-nth build n) (breakdown items (nth build n))))
+
+(defn breakdowns [items build]
+  (map (partial breakdown-nth items build)
+       (range (count build))))
+
+(defn max-breakdowns [items champ level props build]
+  (let [energy (partial (apply juxt props) champ level)]
+    (reduce #(if (> (compare (energy %1) (energy %2)) 0) %1 %2)
+            (breakdowns items build))))
+
+(defn build-path [items champ level props build]
+  (->> build
+    (iterate (partial max-breakdowns items champ level props))
+    (remove #(> (count %) 6))
+    (take-while seq)))
