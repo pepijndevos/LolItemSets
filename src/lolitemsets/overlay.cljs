@@ -82,3 +82,9 @@
     (* (min 1 (/ mana session-mana-cost))
        damage
        60)))
+
+; Yasuo has double crit chance TODO: and 10% reduced crit damage
+(defmethod algo/build-stat ["Yasuo" :crit] [base-name lvl-name item-flat item-percent champ level build]
+  (* 2 (algo/build-stat* base-name lvl-name item-flat item-percent champ level build)))
+
+
