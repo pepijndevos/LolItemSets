@@ -305,11 +305,17 @@
                      [objective-checkbox name calc]))
       [number-selector "Champion level" :champ-level 18 1]
       [number-selector "Number of items" :num-items 6 1] [:br]
-      [:div.btn-group.btn-group-justified
+      [:div.btn-group.btn-group-justified.visible-lg-block
         [button-of-command] ; generate
         [dorans-button] ; troll
-        [mirage-button] ; add
+        [mirage-button]              ; add
         [needlessly-large-button]] ; download
+      [:div.btn-group.btn-group-justified.hidden-lg
+       [button-of-command]
+       [dorans-button]]
+      [:div.btn-group.btn-group-justified.hidden-lg
+       [mirage-button]
+       [needlessly-large-button]]
       [:p [:br]
        "Save inside your League of Legends folder in "
        [:code
