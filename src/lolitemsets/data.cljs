@@ -16,9 +16,11 @@
 
 (defn champ-img-square-url
   [champion-name]
-  (str "http://ddragon.leagueoflegends.com/cdn/5.16.1/img/champion/"
-       champion-name
-       ".png"))
+  (if champion-name
+    (str "http://ddragon.leagueoflegends.com/cdn/5.16.1/img/champion/"
+         champion-name
+         ".png")
+    "questionmark.png"))
 
 (defn champ-img-loading-url
   [champion-name & [skin-number]]

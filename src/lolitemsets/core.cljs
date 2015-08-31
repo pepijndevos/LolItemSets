@@ -58,7 +58,7 @@
     (.createObjectURL js/URL blob)))
 
 (defn champion-image []
-  [:img.img-rounded {:src (data/champ-img-square-url (get-in @app [:champ :id] "Heimerdinger"))
+  [:img.img-rounded {:src (data/champ-img-square-url (get-in @app [:champ :id]))
                      :width 64
                      :height 64}])
 
