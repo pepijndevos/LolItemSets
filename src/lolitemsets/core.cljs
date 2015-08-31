@@ -16,6 +16,8 @@
                     :recommended []
                     :champ-level 18
                     :num-items 6
+                    :generating false
+                    :trolling false
                     :itemset {:title "Untitled"
                               :type "custom"
                               :map "any"
@@ -188,6 +190,7 @@
 
    {:name "Movement speed"
     :calc algo/move-speed
+    :optimizable true
     :troll true}])
 
 (defn build-stats []
@@ -247,20 +250,39 @@
   (recommend))
 
 (defn dorans-button []
-  [:a.btn.btn-danger.btn-xl {:on-click troll}
-   [:span.glyphicon.glyphicon-fire] " Troll"])
+  [:a.btn.btn-danger.btn-lg
+   {:on-click (fn [] (go (swap! app assoc :trolling true)
+                         (<! (troll))
+                         (swap! app assoc :trolling false)))
+    :class (if (:trolling @app)
+             "disabled"
+             nil)}
+   [:span.glyphicon.glyphicon-fire]
+   (if (:trolling @app)
+     " YOLO..."
+     " Troll")])
 
 (defn needlessly-large-button []
-  [:a.btn.btn-default.btn-xl {:href (set-url) :download "build.json"}
+  [:a.btn.btn-default.btn-lg {:href (set-url)
+                              :download (str (:title (:itemset @app)) ".json")}
    [:span.glyphicon.glyphicon-save] " Download"])
 
 (defn mirage-button []
-  [:a.btn.btn-default.btn-xl {:on-click add-block}
+  [:a.btn.btn-default.btn-lg {:on-click add-block}
    [:span.glyphicon.glyphicon-plus-sign] " Add to set"])
 
 (defn button-of-command []
-  [:a.btn.btn-primary.btn-xl {:on-click recommend}
-   [:span.glyphicon.glyphicon-equalizer] " Generate"])
+  [:a.btn.btn-primary.btn-lg
+   {:on-click (fn [] (go (swap! app assoc :generating true)
+                         (<! (recommend))
+                         (swap! app assoc :generating false)))
+    :class (if (:generating @app)
+             "disabled"
+             nil)}
+   [:span.glyphicon.glyphicon-equalizer]
+   (if (:generating @app)
+     " Generating..."
+     " Generate")])
 
 (defn app-component []
   [:div.container
@@ -286,7 +308,7 @@
         [dorans-button] ; troll
         [mirage-button] ; add
         [needlessly-large-button]] ; download
-      [:p 
+      [:p [:br]
        "Save inside your League of Legends folder in "
        [:code
         "Config/Champions/" 
