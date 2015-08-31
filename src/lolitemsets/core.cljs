@@ -29,12 +29,12 @@
                                                 {:id "2004" :count 1}
                                                 {:id "3340" :count 1}]}]}}))
 
-(go
-  (let [champ-chan (data/champ-chan)
-        item-chan (data/item-chan)
-        champs (<! champ-chan)
-        items (<! item-chan)]
-    (swap! app assoc :items items :champs champs :champ (val (first champs)))))
+(defonce init (go
+                (let [champ-chan (data/champ-chan)
+                      item-chan (data/item-chan)
+                      champs (<! champ-chan)
+                      items (<! item-chan)]
+                  (swap! app assoc :items items :champs champs :champ (val (first champs))))))
 
 (defn recommend []
   (let [{:keys [items num-items champ champ-level props]} @app
@@ -78,16 +78,16 @@
 
 (defn champion-select []
   [:div.media
-   [:div.media-left (champion-image)]
+   [:div.media-left [champion-image]]
    [:div.media-body
     [:h4.media-heading "Make a build for:"]
     [:select {:value (:id (:champ @app))
-              :on-change (fn [event]
-                           (swap! app
-                                  #(assoc %1 :champ (get-in %1 [:champs %2]))
-                                  (keyword (-> event .-target .-value))))}
-     (for [[id ch] (sort-by (comp :name val) (:champs @app))]
-       [:option {:key id :value id} (:name ch)])]]])
+                   :on-change (fn [event]
+                                (swap! app
+                                       #(assoc %1 :champ (get-in %1 [:champs %2]))
+                                       (keyword (-> event .-target .-value))))}
+        (for [[id ch] (sort-by (comp :name val) (:champs @app))]
+          [:option {:key id :value id} (:name ch)])]]])
 
 (defn item-select [idx item]
   [:select {:value (:id item)
@@ -112,7 +112,7 @@
    [:div.media-body
     [:h4.media-heading
      [item-select idx item]
-     [:sapn
+     [:span
       [:img {:src (data/gold-url)}]
       (:total (:gold item))]]
     [:div {:dangerouslySetInnerHTML {:__html (:description item)}}]]])
@@ -145,31 +145,75 @@
              :value (key @app)
              :on-change #(swap! app assoc key (int (-> % .-target .-value)))}]]])
 
+(def stats
+  "A vector of maps
+  :name - The user friendly name of the stat
+  :calc - A function that takes a champion, champion level, and item
+  set, and returns the raw value of that stat.
+  :pretty - A function that takes the raw value of a stat and returns
+  a user friendly value (i.e. adds a % sign if appropriate). Optional,
+  default is the \"int\" function."
+  [{:name "Attack damage (AD)"
+    :calc algo/attack-damage
+    :optimizable true}
+   {:name "Critical strike chance"
+    :calc algo/critical-strike
+    :pretty (fn [n] (str (int (* 100 n)) "%"))}
+   {:name "Attack speed"
+    :calc algo/attack-speed
+    :pretty (fn [n] (.toFixed n 2))}
+   {:name "Physical damage per second (DPS)"
+    :calc algo/build-dps
+    :optimizable true}
+
+   {:name "Life steal"
+    :calc (algo/item-wrapper algo/life-steal)
+    :pretty (fn [n] (str (int (* 100 n)) "%"))}
+   {:name "Life stolen per second"
+    :calc algo/build-lsps
+    :optimizable true}
+
+   {:name "Ability power (AP)"
+    :calc (algo/item-wrapper algo/ability-power)
+    :optimizable true}
+
+   {:name "Health"
+    :calc algo/health}
+   {:name "Armor"
+    :calc algo/armor}
+   {:name "Magic resist"
+    :calc algo/magic-resist}
+   {:name "Effective health (physical)"
+    :calc algo/build-hp-ad
+    :optimizable true}
+   {:name "Effective health (magic)"
+    :calc algo/build-hp-ap
+    :optimizable true}
+
+   {:name "Mana"
+    :calc algo/mana
+    :optimizable true}
+   {:name "Mana regen over 5 seconds"
+    :calc algo/mana-regen
+    :optimizable true}])
+
 (defn build-stats []
   (let [{:keys [recommended champ champ-level]} @app]
     [:div.panel.panel-primary
      [:div.panel-heading "Build statistics"]
-     [:table.table
-      [:tr [:th "Stat"] [:th "Value"]]
-      [:tr [:td "Attack damage per second"] [:td (int (algo/build-dps champ champ-level recommended))]]
-      [:tr [:td "Attack damage"] [:td (int (algo/attack-damage champ champ-level recommended))]]
-      [:tr [:td "Critical strike chance"] [:td (int (* 100 (algo/critical-strike champ champ-level recommended))) "%"]]
-      [:tr [:td "Attack speed"] [:td (.toFixed (algo/attack-speed champ champ-level recommended) 2)]]
-      [:tr [:td "Life steal per second"] [:td (int (algo/build-lsps champ champ-level recommended))]]
-      [:tr [:td "Life steal"] [:td (int (* 100 (algo/life-steal recommended))) "%"]]
-      [:tr [:td "Ability power"] [:td (algo/ability-power recommended)]]
-      [:tr [:td "Effcetive health (AD)"] [:td (int (algo/build-hp-ad champ champ-level recommended))]]
-      [:tr [:td "Effcetive health (AP)"] [:td (int (algo/build-hp-ap champ champ-level recommended))]]
-      [:tr [:td "HP"] [:td (int (algo/health champ champ-level recommended))]]
-      [:tr [:td "Armor"] [:td (int (algo/armor champ champ-level recommended))]]
-      [:tr [:td "Magic resist"] [:td (int (algo/magic-resist champ champ-level recommended))]]
-      [:tr [:td "Mana"] [:td (int (algo/mana champ champ-level recommended))]]
-      [:tr [:td "Mana regeneration over 5 seconds"] [:td (int (algo/mana-regen champ champ-level recommended))]]
-      [:tr [:td "Movement speed"] [:td (int (algo/move-speed champ champ-level recommended))]]
-      [:tr [:td "Burst"] [:td (int (algo/burst champ champ-level recommended))]]
-      [:tr [:td "Poke per minute"] [:td (int (algo/poke champ champ-level recommended))]]
-      [:tr [:td "Gold"] [:td (- (algo/cost recommended))]]
-      ]]))
+     (into [:table.table
+            [:tr [:th "Stat"] [:th "Value"]]]
+           (for [{:keys [name calc pretty] :as stat} stats
+                 :let [stat-optimized? (contains? (:props @app) name)]]
+             [(if stat-optimized?
+                :tr.info
+                :tr)
+              [:td (cond-> name
+                     stat-optimized? (as-> el [:b el]))]
+              [:td (cond-> (calc champ champ-level recommended)
+                     (not pretty) int
+                     pretty pretty
+                     stat-optimized? (as-> el [:b el]))]]))]))
 
 (defn item-block [id block all-items]
   (let [items (map #(get all-items (int (:id %))) (:items block))]
@@ -225,16 +269,9 @@
       [:h4 "Objectives "
        [:a.glyphicon.glyphicon-question-sign
         {:href "https://github.com/pepijndevos/LolItemSets#objectives"}]]
-      ;[objective-checkbox "Gold" (algo/item-wrapper algo/cost)]
-      [objective-checkbox "Attack damage per second" algo/build-dps]
-      [objective-checkbox "Life Steal per second" algo/build-lsps]
-      [objective-checkbox "Ability power" (algo/item-wrapper algo/ability-power)]
-      [objective-checkbox "Mana" algo/mana]
-      [objective-checkbox "Movement speed" algo/move-speed]
-      [objective-checkbox "Poke per minute" algo/poke]
-      [objective-checkbox "Burst" algo/burst]
-      [objective-checkbox "Effective Health (AP)" algo/build-hp-ap]
-      [objective-checkbox "Effective Health (AD)" algo/build-hp-ad] [:br]
+      (into [:div] (for [{:keys [name calc optimizable] :as stat} stats
+                         :when optimizable]
+                     [objective-checkbox name calc]))
       [number-selector "Champion level" :champ-level 18 1]
       [number-selector "Number of items" :num-items 6 1] [:br]
       [:div.btn-group.btn-group-justified
