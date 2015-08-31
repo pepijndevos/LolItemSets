@@ -87,10 +87,12 @@
      [:option {:key id :value id} name])])
 
 (defn item-image [item]
-  [:img.img-rounded {:src (if item
-                            (data/item-img-url (get-in item [:image :full]))
-                            "questionmark.png")
-                     :width 64 :height 64}])
+  [:span {:style {:padding-right "5px"}}
+   [:img.img-rounded
+    {:src (if item
+            (data/item-img-url (get-in item [:image :full]))
+            "questionmark.png")
+     :width 64 :height 64}]])
 
 (defn item-component [idx item]
   [:div.media.well.well-sm {:key (:id item)}
