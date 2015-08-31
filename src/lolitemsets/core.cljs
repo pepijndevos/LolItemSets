@@ -55,22 +55,6 @@
                        #js{:type "application/json"})]
     (.createObjectURL js/URL blob)))
 
-(def troll-objectives {
-"Attack damage per second" algo/build-dps
-"Ability power" (algo/item-wrapper algo/ability-power)
-"Mana" algo/mana
-"Movement speed" algo/move-speed
-"Effective Health (AP)" algo/build-hp-ap
-"Effective Health (AD)" algo/build-hp-ad})
-
-(defn troll []
-  (swap! app #(assoc % :champ (rand-nth (vals (:champs %)))
-                       :props (conj {} (rand-nth (seq troll-objectives)))))
-  (go
-    (<! (recommend))
-    (add-block)
-    (set! (.-location js/window) (set-url))))
-
 (defn champion-image []
   [:img.img-rounded {:src (data/champ-img-square-url (get-in @app [:champ :id] "Heimerdinger"))
                      :width 64
@@ -152,7 +136,9 @@
   set, and returns the raw value of that stat.
   :pretty - A function that takes the raw value of a stat and returns
   a user friendly value (i.e. adds a % sign if appropriate). Optional,
-  default is the \"int\" function."
+  default is the \"int\" function.
+  :optimizable - Whether a checkbox exists for this stat.
+  :troll - Whether the Troll button may optimize for this stat."
   [{:name "Attack damage (AD)"
     :calc algo/attack-damage
     :optimizable true}
@@ -164,7 +150,8 @@
     :pretty (fn [n] (.toFixed n 2))}
    {:name "Physical damage per second (DPS)"
     :calc algo/build-dps
-    :optimizable true}
+    :optimizable true
+    :troll true}
 
    {:name "Life steal"
     :calc (algo/item-wrapper algo/life-steal)
@@ -175,7 +162,8 @@
 
    {:name "Ability power (AP)"
     :calc (algo/item-wrapper algo/ability-power)
-    :optimizable true}
+    :optimizable true
+    :troll true}
 
    {:name "Health"
     :calc algo/health}
@@ -192,10 +180,15 @@
 
    {:name "Mana"
     :calc algo/mana
-    :optimizable true}
+    :optimizable true
+    :troll true}
    {:name "Mana regen over 5 seconds"
     :calc algo/mana-regen
-    :optimizable true}])
+    :optimizable true}
+
+   {:name "Movement speed"
+    :calc algo/move-speed
+    :troll true}])
 
 (defn build-stats []
   (let [{:keys [recommended champ champ-level]} @app]
@@ -243,17 +236,31 @@
        (for [[id block] blocks]
          (item-block id block items))]]))
 
+(def troll-objectives
+  (into {} (for [{:keys [name calc troll] :as stat} stats
+                 :when troll]
+             [name calc])))
+
+(defn troll []
+  (swap! app #(assoc % :champ (rand-nth (vals (:champs %)))
+                       :props (conj {} (rand-nth (seq troll-objectives)))))
+  (recommend))
+
 (defn dorans-button []
-  [:a.btn.btn-danger.btn-xl {:on-click troll} "Troll"])
+  [:a.btn.btn-danger.btn-xl {:on-click troll}
+   [:span.glyphicon.glyphicon-fire] " Troll"])
 
 (defn needlessly-large-button []
-  [:a.btn.btn-default.btn-xl {:href (set-url) :download "build.json"} "Download"])
+  [:a.btn.btn-default.btn-xl {:href (set-url) :download "build.json"}
+   [:span.glyphicon.glyphicon-save] " Download"])
 
 (defn mirage-button []
-  [:a.btn.btn-default.btn-xl {:on-click add-block} "Add to set"])
+  [:a.btn.btn-default.btn-xl {:on-click add-block}
+   [:span.glyphicon.glyphicon-plus-sign] " Add to set"])
 
 (defn button-of-command []
-  [:a.btn.btn-primary.btn-xl {:on-click recommend} "Generate build"])
+  [:a.btn.btn-primary.btn-xl {:on-click recommend}
+   [:span.glyphicon.glyphicon-equalizer] " Generate"])
 
 (defn app-component []
   [:div.container
