@@ -33,8 +33,8 @@ Optimal item sets are an [multi-objective optimisation problem](https://en.wikip
 
 ### Compound
 
-* Attack damage per second: The amount of auto-attack damage per second, taking into account attack speed and chance to critical strike.
-* Life-steal per second: The amount of life stolen given your DPS. Does not take into account enemy armour.
+* Physical damage per second (DPS): The amount of auto-attack damage per second, taking into account attack speed and chance to critical strike.
+* Life stolen per second: The amount of life stolen given your DPS. Does not take into account enemy armour.
 * Poke per minute: Champion defined damage of some ability, taking into account cool-down, mana (regen) and AP/AD scaling factor.
 * Burst: Potential damage of a champion defined ability combo.
 * Effective Health (AP/AD): A combination of health and armour/magic-resist.
@@ -69,8 +69,8 @@ This tool does not model everything and certainly not your specific play-style a
 
 ## I'm bored!
 
-Click the troll button. This will pick a random champion and objective, generate a build, and download it.
-All you have to do is play it. Best used with friends, to not upset your team mates with your AD Tresh.
+Click the troll button. This will pick a random champion and objective, and generate a build.
+All you have to do is play it. Best used with friends, to not upset your team mates with your AD Thresh.
 
 ## Disclaimer
 
