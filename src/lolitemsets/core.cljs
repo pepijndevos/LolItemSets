@@ -31,6 +31,10 @@
                                                 {:id "2004" :count 1}
                                                 {:id "3340" :count 1}]}]}}))
 
+(defn loading? []
+  (or (:generating @app)
+      (:trolling @app)))
+
 (defonce init (go
                 (let [champ-chan (data/champ-chan)
                       item-chan (data/item-chan)
@@ -106,10 +110,11 @@
     [:div {:dangerouslySetInnerHTML {:__html (:description item)}}]]])
 
 (defn item-recommendation []
-  [:div.media-list
-   (map item-component
-        (range)
-        (:recommended @app))])
+  (when-not (loading?)
+    [:div.media-list
+     (map item-component
+          (range)
+          (:recommended @app))]))
 
 (defn objective-checkbox [name objective]
   (let [id (str (gensym))
@@ -195,23 +200,32 @@
     :optimizable true
     :troll true}])
 
-(defn build-stats []
+(defn stats-table []
   (let [{:keys [recommended champ champ-level]} @app]
-    [:div.panel.panel-primary
-     [:div.panel-heading "Build statistics"]
-     (into [:table.table
-            [:tr [:th "Stat"] [:th "Value"]]]
-           (for [{:keys [name calc pretty] :as stat} stats
-                 :let [stat-optimized? (contains? (:props @app) name)]]
-             [(if stat-optimized?
-                :tr.info
-                :tr)
-              [:td (cond-> name
-                     stat-optimized? (as-> el [:b el]))]
-              [:td (cond-> (calc champ champ-level recommended)
-                     (not pretty) int
-                     pretty pretty
-                     stat-optimized? (as-> el [:b el]))]]))]))
+    (into [:table.table
+           [:tr [:th "Stat"] [:th "Value"]]]
+          (for [{:keys [name calc pretty] :as stat} stats
+                :let [stat-optimized? (contains? (:props @app) name)]]
+            [(if stat-optimized?
+               :tr.info
+               :tr)
+             [:td (cond-> name
+                    stat-optimized? (as-> el [:b el]))]
+             [:td (cond-> (calc champ champ-level recommended)
+                    (not pretty) int
+                    pretty pretty
+                    stat-optimized? (as-> el [:b el]))]]))))
+
+(defn current-build []
+  (into [:div]
+        (for [i (:recommended @app)]
+          [item-image i])))
+
+(defn build-stats []
+  [:div.panel.panel-primary
+   [:div.panel-heading "Current build"]
+   [:div.panel-body [current-build]]
+   [stats-table]])
 
 (defn item-block [id block all-items]
   (let [items (map #(get all-items (int (:id %))) (:items block))]
