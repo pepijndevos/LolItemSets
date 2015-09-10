@@ -217,9 +217,12 @@
                     stat-optimized? (as-> el [:b el]))]]))))
 
 (defn current-build []
-  (into [:div]
-        (for [i (:recommended @app)]
-          [item-image i])))
+  (let [n (:num-items @app)
+        build (:recommended @app)
+        build (concat build (repeat (- n (count build)) nil))]
+    (into [:div]
+          (for [i build]
+            [item-image i]))))
 
 (defn build-stats []
   [:div.panel.panel-primary
