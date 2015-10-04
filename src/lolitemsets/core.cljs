@@ -87,11 +87,9 @@
 (defn item-select [idx item]
   [:select {:value (:id item)
             :on-change (fn [event]
-                         (swap! app
-                                #(assoc-in %
-                                   [:recommended idx]
-                                   (get-in % [:items %2]))
-                                (int (-> event .-target .-value))))}
+                         (let [item-id (int (-> event .-target .-value))]
+                           (swap! app assoc-in [:recommended idx]
+                                  (@items item-id))))}
    (for [[id {name :name}] (sort-by (comp :name val) @items)]
      [:option {:key id :value id} name])])
 
@@ -104,7 +102,7 @@
      :width 64 :height 64}]])
 
 (defn item-component [idx item]
-  [:div.media.well.well-sm {:key (:id item)}
+  [:div.media.well.well-sm
    [:div.media-left [item-image item]]
    [:div.media-body
     [:h4.media-heading
@@ -116,7 +114,8 @@
 
 (defn item-recommendation [recommended]
   [:div.media-list
-   (map item-component
+   (map (fn [idx item]
+          ^{:key idx} [item-component idx item])
         (range)
         recommended)])
 
@@ -222,17 +221,17 @@
                    stat-optimized? (as-> el [:b el]))]]))])
 
 (defn item-block [id block]
-  (let [items (map #(get @items (int (:id %))) (:items block))]
-   [:div.panel.panel-default {:key id}
+  (let [items (mapv #(get @items (int (:id %))) (:items block))]
+   [:div.panel.panel-default
     [:div.panel-heading
      [:input.form-control
       {:type "text"
        :on-change #(swap! app assoc-in [:itemset :blocks id :type] (-> % .-target .-value))
        :value (:type block)}]]
-      [:div.panel-body
+    [:div.panel-body
      (for [item items]
        [:span {:key (:id item)}
-        (item-image item)])]]))
+        [item-image item]])]]))
 
 (defn item-set [itemset]
   (let [blocks (map vector (range) (:blocks itemset))]
@@ -244,7 +243,7 @@
         :value (:title itemset)}]]
      [:div.panel-body
       (for [[id block] blocks]
-        (item-block id block))]]))
+        ^{:key id} [item-block id block])]]))
 
 (def troll-objectives
   (into {} (for [{:keys [name calc troll] :as stat} stats
