@@ -49,7 +49,6 @@
 (defn one-boot [build]
   (let [split (juxt filter remove)
         [boots other] (split #(some #{"Boots"} (:tags %)) build)]
-    (println boots)
     (if (seq boots)
       (cons (first boots) other)
       build)))

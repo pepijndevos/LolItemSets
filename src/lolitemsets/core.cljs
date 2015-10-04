@@ -14,6 +14,7 @@
 (defonce app (atom {:text "LoL Set Forge"
                     :props {}
                     :recommended []
+                    :champ nil
                     :champ-level 18
                     :num-items 6
                     :generating false
@@ -31,15 +32,24 @@
                                                 {:id "2004" :count 1}
                                                 {:id "3340" :count 1}]}]}}))
 
-(defonce init (go
-                (let [champ-chan (data/champ-chan)
-                      item-chan (data/item-chan)
-                      champs (<! champ-chan)
-                      items (<! item-chan)]
-                  (swap! app assoc :items items :champs champs :champ (val (first champs))))))
+(defonce items (atom nil))
+(defonce champs (atom nil))
+
+(defn init []
+  (go
+    (let [champ-chan (data/champ-chan)
+          item-chan (data/item-chan)
+          champ-data (<! champ-chan)]
+      (reset! champs champ-data)
+      (swap! app assoc :champ (val (first champ-data)))
+      (let [item-data (<! item-chan)]
+        (reset! items item-data)))))
+
+(defonce do-it (init))
 
 (defn recommend []
-  (let [{:keys [items num-items champ champ-level props]} @app
+  (let [{:keys [num-items champ champ-level props]} @app
+        items @items
         ch (algo/recommend (vals items) num-items champ champ-level (vals props))]
     (go-loop []
       (when-let [build (<! ch)]
@@ -57,23 +67,22 @@
                        #js{:type "application/json"})]
     (.createObjectURL js/URL blob)))
 
-(defn champion-image []
-  [:img.img-rounded {:src (data/champ-img-square-url (get-in @app [:champ :id]))
+(defn champion-image [champ-id]
+  [:img.img-rounded {:src (data/champ-img-square-url champ-id)
                      :width 64
                      :height 64}])
 
-(defn champion-select []
+(defn champion-select [champ-id]
   [:div.media
-   [:div.media-left [champion-image]]
+   [:div.media-left [champion-image champ-id]]
    [:div.media-body
     [:h4.media-heading "Make a build for:"]
-    [:select {:value (:id (:champ @app))
-                   :on-change (fn [event]
-                                (swap! app
-                                       #(assoc %1 :champ (get-in %1 [:champs %2]))
-                                       (keyword (-> event .-target .-value))))}
-        (for [[id ch] (sort-by (comp :name val) (:champs @app))]
-          [:option {:key id :value id} (:name ch)])]]])
+    [:select {:value champ-id
+              :on-change (fn [event]
+                           (let [champ-name (keyword (-> event .-target .-value))]
+                             (swap! app assoc :champ (@champs champ-name))))}
+     (for [[id ch] (sort-by (comp :name val) @champs)]
+       [:option {:key id :value id} (:name ch)])]]])
 
 (defn item-select [idx item]
   [:select {:value (:id item)
@@ -83,7 +92,7 @@
                                    [:recommended idx]
                                    (get-in % [:items %2]))
                                 (int (-> event .-target .-value))))}
-   (for [[id {name :name}] (sort-by (comp :name val) (:items @app))]
+   (for [[id {name :name}] (sort-by (comp :name val) @items)]
      [:option {:key id :value id} name])])
 
 (defn item-image [item]
@@ -105,13 +114,13 @@
       (:total (:gold item))]]
     [:div {:dangerouslySetInnerHTML {:__html (:description item)}}]]])
 
-(defn item-recommendation []
+(defn item-recommendation [recommended]
   [:div.media-list
    (map item-component
         (range)
-        (:recommended @app))])
+        recommended)])
 
-(defn objective-checkbox [name objective]
+(defn objective-checkbox [props name objective]
   (let [id (str (gensym))
         toggle (fn [event]
             (swap! app update-in [:props]
@@ -120,17 +129,17 @@
                      #(dissoc % name))))]
     [:div.row
      [:div.col-xs-1 [:input {:type :checkbox
-                             :checked (contains? (:props @app) name) 
+                             :checked (contains? props name)
                              :on-change toggle :id id}]]
      [:label {:for id} name]]))
 
-(defn number-selector [label key max min]
+(defn number-selector [value label key max min]
   [:div.row
    [:div.col-xs-3 label]
    [:div.col-xs-9
     [:input {:type "number"
              :max max :min min
-             :value (key @app)
+             :value value
              :on-change #(swap! app assoc key (int (-> % .-target .-value)))}]]])
 
 (def stats
@@ -195,26 +204,25 @@
     :optimizable true
     :troll true}])
 
-(defn build-stats []
-  (let [{:keys [recommended champ champ-level]} @app]
-    [:div.panel.panel-primary
-     [:div.panel-heading "Build statistics"]
-     (into [:table.table
-            [:tr [:th "Stat"] [:th "Value"]]]
-           (for [{:keys [name calc pretty] :as stat} stats
-                 :let [stat-optimized? (contains? (:props @app) name)]]
-             [(if stat-optimized?
-                :tr.info
-                :tr)
-              [:td (cond-> name
-                     stat-optimized? (as-> el [:b el]))]
-              [:td (cond-> (calc champ champ-level recommended)
-                     (not pretty) int
-                     pretty pretty
-                     stat-optimized? (as-> el [:b el]))]]))]))
+(defn build-stats [recommended champ champ-level props]
+  [:div.panel.panel-primary
+   [:div.panel-heading "Build statistics"]
+   (into [:table.table
+          [:tr [:th "Stat"] [:th "Value"]]]
+         (for [{:keys [name calc pretty] :as stat} stats
+               :let [stat-optimized? (contains? props name)]]
+           [(if stat-optimized?
+              :tr.info
+              :tr)
+            [:td (cond-> name
+                   stat-optimized? (as-> el [:b el]))]
+            [:td (cond-> (calc champ champ-level recommended)
+                   (not pretty) int
+                   pretty pretty
+                   stat-optimized? (as-> el [:b el]))]]))])
 
-(defn item-block [id block all-items]
-  (let [items (map #(get all-items (int (:id %))) (:items block))]
+(defn item-block [id block]
+  (let [items (map #(get @items (int (:id %))) (:items block))]
    [:div.panel.panel-default {:key id}
     [:div.panel-heading
      [:input.form-control
@@ -226,20 +234,17 @@
        [:span {:key (:id item)}
         (item-image item)])]]))
 
-(defn item-set []
-  (let [state @app
-        itemset (:itemset state)
-        items (:items state)
-        blocks (map vector (range) (:blocks itemset))]
+(defn item-set [itemset]
+  (let [blocks (map vector (range) (:blocks itemset))]
     [:div.panel.panel-primary
-      [:div.panel-heading
-       [:input.form-control
-        {:type "text"
-         :on-change #(swap! app assoc-in [:itemset :title] (-> % .-target .-value))
-         :value (:title itemset)}]]
-      [:div.panel-body
-       (for [[id block] blocks]
-         (item-block id block items))]]))
+     [:div.panel-heading
+      [:input.form-control
+       {:type "text"
+        :on-change #(swap! app assoc-in [:itemset :title] (-> % .-target .-value))
+        :value (:title itemset)}]]
+     [:div.panel-body
+      (for [[id block] blocks]
+        (item-block id block))]]))
 
 (def troll-objectives
   (into {} (for [{:keys [name calc troll] :as stat} stats
@@ -251,83 +256,84 @@
                        :props (conj {} (rand-nth (seq troll-objectives)))))
   (recommend))
 
-(defn dorans-button []
+(defn dorans-button [trolling]
   [:a.btn.btn-danger.btn-lg
    {:on-click (fn [] (go (swap! app assoc :trolling true)
                          (<! (troll))
                          (swap! app assoc :trolling false)))
-    :class (if (:trolling @app)
+    :class (if trolling
              "disabled"
              nil)}
    [:span.glyphicon.glyphicon-fire]
-   (if (:trolling @app)
+   (if trolling
      " YOLO..."
      " Troll")])
 
-(defn needlessly-large-button []
+(defn needlessly-large-button [itemset-title]
   [:a.btn.btn-default.btn-lg {:href (set-url)
-                              :download (str (:title (:itemset @app)) ".json")}
+                              :download (str itemset-title ".json")}
    [:span.glyphicon.glyphicon-save] " Download"])
 
 (defn mirage-button []
   [:a.btn.btn-default.btn-lg {:on-click add-block}
    [:span.glyphicon.glyphicon-plus-sign] " Add to set"])
 
-(defn button-of-command []
+(defn button-of-command [generating]
   [:a.btn.btn-primary.btn-lg
    {:on-click (fn [] (go (swap! app assoc :generating true)
                          (<! (recommend))
                          (swap! app assoc :generating false)))
-    :class (if (:generating @app)
+    :class (if generating
              "disabled"
              nil)}
    [:span.glyphicon.glyphicon-equalizer]
-   (if (:generating @app)
+   (if generating
      " Generating..."
      " Generate")])
 
 (defn app-component []
-  [:div.container
-   [:div.row
-    [:h1.col-sm-6 (:text @app)]
-    [:div.col-sm-6
-      [:br]
-      [:a {:href "https://github.com/pepijndevos/LolItemSets#usage"}
-       [:span.glyphicon.glyphicon-question-sign] " About"]]]
-   [:div.row
-     [:div.col-sm-6
-      [champion-select]
-      [:h4 "Objectives "
-       [:a.glyphicon.glyphicon-question-sign
-        {:href "https://github.com/pepijndevos/LolItemSets#objectives"}]]
-      (into [:div] (for [{:keys [name calc optimizable] :as stat} stats
-                         :when optimizable]
-                     [objective-checkbox name calc]))
-      [number-selector "Champion level" :champ-level 18 1]
-      [number-selector "Number of items" :num-items 6 1] [:br]
-      [:div.btn-group.btn-group-justified.visible-lg-block
-        [button-of-command] ; generate
-        [dorans-button] ; troll
+  (let [state @app]
+    [:div.container
+     [:div.row
+      [:h1.col-sm-6 (:text state)]
+      [:div.col-sm-6
+       [:br]
+       [:a {:href "https://github.com/pepijndevos/LolItemSets#usage"}
+        [:span.glyphicon.glyphicon-question-sign] " About"]]]
+     [:div.row
+      [:div.col-sm-6
+       [champion-select (:id (:champ state))]
+       [:h4 "Objectives "
+        [:a.glyphicon.glyphicon-question-sign
+         {:href "https://github.com/pepijndevos/LolItemSets#objectives"}]]
+       (into [:div] (for [{:keys [name calc optimizable] :as stat} stats
+                          :when optimizable]
+                      [objective-checkbox (:props state) name calc]))
+       [number-selector (:champ-level state) "Champion level" :champ-level 18 1]
+       [number-selector (:champ-level state) "Number of items" :num-items 6 1] [:br]
+       [:div.btn-group.btn-group-justified.visible-lg-block
+        [button-of-command (:generating state)] ; generate
+        [dorans-button (:trolling state)] ; troll
         [mirage-button]              ; add
-        [needlessly-large-button]] ; download
-      [:div.btn-group.btn-group-justified.hidden-lg
-       [button-of-command]
-       [dorans-button]]
-      [:div.btn-group.btn-group-justified.hidden-lg
-       [mirage-button]
-       [needlessly-large-button]]
-      [:p [:br]
-       "Save inside your League of Legends folder in "
-       [:code
-        "Config/Champions/" 
-        (:id (:champ @app))
-        "/Recommended/" 
-        (:title (:itemset @app))
-        ".json"]]
-      [item-set]]
-     [:div.col-sm-6
-      [build-stats]
-      [item-recommendation]]]])
+        [needlessly-large-button (:title (:itemset state))]] ; download
+       [:div.btn-group.btn-group-justified.hidden-lg
+        [button-of-command (:generating state)]
+        [dorans-button (:trolling state)]]
+       [:div.btn-group.btn-group-justified.hidden-lg
+        [mirage-button]
+        [needlessly-large-button (:title (:itemset state))]]
+       [:p [:br]
+        "Save inside your League of Legends folder in "
+        [:code
+         "Config/Champions/" 
+         (:id (:champ state))
+         "/Recommended/" 
+         (:title (:itemset state))
+         ".json"]]
+       [item-set (:itemset state) (:blocks state)]]
+      [:div.col-sm-6
+       [build-stats (:recommended state) (:champ state) (:champ-level state) (:props state)]
+       [item-recommendation (:recommended state)]]]]))
 
 (reagent/render-component [app-component]
                           (. js/document (getElementById "app")))
