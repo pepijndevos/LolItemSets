@@ -257,8 +257,9 @@
              [name calc])))
 
 (defn troll []
-  (swap! app #(assoc % :champ (rand-nth (vals (:champs %)))
-                       :props (conj {} (rand-nth (seq troll-objectives)))))
+  (swap! app assoc
+         :champ (rand-nth (vals @champs))
+         :props (conj {} (rand-nth (seq troll-objectives))))
   (recommend))
 
 (defn dorans-button [trolling]
