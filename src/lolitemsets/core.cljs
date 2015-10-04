@@ -203,22 +203,28 @@
     :optimizable true
     :troll true}])
 
+(defn stat-row [recommended props champ champ-level {:keys [name calc pretty] :as stat}]
+  (let [stat-optimized? (contains? props name)]
+    [(if stat-optimized?
+       :tr.info
+       :tr)
+     [:td (cond-> name
+            stat-optimized? (as-> el [:b el]))]
+     [:td (cond-> (calc champ champ-level recommended)
+            (not pretty) int
+            pretty pretty
+            stat-optimized? (as-> el [:b el]))]]))
+
 (defn build-stats [recommended champ champ-level props]
   [:div.panel.panel-primary
    [:div.panel-heading "Build statistics"]
-   (into [:table.table
-          [:tr [:th "Stat"] [:th "Value"]]]
-         (for [{:keys [name calc pretty] :as stat} stats
-               :let [stat-optimized? (contains? props name)]]
-           [(if stat-optimized?
-              :tr.info
-              :tr)
-            [:td (cond-> name
-                   stat-optimized? (as-> el [:b el]))]
-            [:td (cond-> (calc champ champ-level recommended)
-                   (not pretty) int
-                   pretty pretty
-                   stat-optimized? (as-> el [:b el]))]]))])
+   [:table.table
+    [:tr [:th "Stat"] [:th "Value"]]
+    [:div
+     (map (fn [idx stat]
+            ^{:key idx}
+            [stat-row recommended props champ champ-level stat])
+          (range) stats)]]])
 
 (defn item-block [id block]
   (let [items (mapv #(get @items (int (:id %))) (:items block))]
@@ -229,8 +235,8 @@
        :on-change #(swap! app assoc-in [:itemset :blocks id :type] (-> % .-target .-value))
        :value (:type block)}]]
     [:div.panel-body
-     (for [item items]
-       [:span {:key (:id item)}
+     (for [[idx item] (map vector (range) items)]
+       [:span {:key idx}
         [item-image item]])]]))
 
 (defn item-set [itemset]
