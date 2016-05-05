@@ -32,6 +32,9 @@
                                                 {:id "2004" :count 1}
                                                 {:id "3340" :count 1}]}]}}))
 
+(defn loading? []
+  (or (:generating @app)
+      (:trolling @app)))
 (defonce items (atom nil))
 (defonce champs (atom nil))
 
@@ -113,11 +116,12 @@
     [:div {:dangerouslySetInnerHTML {:__html (:description item)}}]]])
 
 (defn item-recommendation [recommended]
-  [:div.media-list
-   (map (fn [idx item]
-          ^{:key idx} [item-component idx item])
-        (range)
-        recommended)])
+  (when-not (loading?)
+    [:div.media-list
+     (map (fn [idx item]
+            ^{:key idx} [item-component idx item])
+          (range)
+          recommended)]))
 
 (defn objective-checkbox [props name objective]
   (let [id (str (gensym))
@@ -215,9 +219,18 @@
             pretty pretty
             stat-optimized? (as-> el [:b el]))]]))
 
+(defn current-build []
+  (let [n (:num-items @app)
+        build (:recommended @app)
+        build (concat build (repeat (- n (count build)) nil))]
+    (into [:div]
+          (for [i build]
+            [item-image i]))))
+
 (defn build-stats [recommended champ champ-level props]
   [:div.panel.panel-primary
-   [:div.panel-heading "Build statistics"]
+   [:div.panel-heading "Current build"]
+   [:div.panel-body [current-build]]
    [:table.table
     [:tr [:th "Stat"] [:th "Value"]]
     [:div
