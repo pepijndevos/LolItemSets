@@ -32,9 +32,6 @@
                                                 {:id "2004" :count 1}
                                                 {:id "3340" :count 1}]}]}}))
 
-(defn loading? []
-  (or (:generating @app)
-      (:trolling @app)))
 (defonce items (atom nil))
 (defonce champs (atom nil))
 
@@ -115,8 +112,8 @@
       (:total (:gold item))]]
     [:div {:dangerouslySetInnerHTML {:__html (:description item)}}]]])
 
-(defn item-recommendation [recommended]
-  (when-not (loading?)
+(defn item-recommendation [recommended loading?]
+  (when-not loading?
     [:div.media-list
      (map (fn [idx item]
             ^{:key idx} [item-component idx item])
@@ -219,18 +216,16 @@
             pretty pretty
             stat-optimized? (as-> el [:b el]))]]))
 
-(defn current-build []
-  (let [n (:num-items @app)
-        build (:recommended @app)
-        build (concat build (repeat (- n (count build)) nil))]
+(defn current-build [recommended num-items]
+  (let [build (concat recommended (repeat (- num-items (count recommended)) nil))]
     (into [:div]
           (for [i build]
             [item-image i]))))
 
-(defn build-stats [recommended champ champ-level props]
+(defn build-stats [recommended champ champ-level props num-items]
   [:div.panel.panel-primary
    [:div.panel-heading "Current build"]
-   [:div.panel-body [current-build]]
+   [:div.panel-body [current-build recommended num-items]]
    [:table.table
     [:tr [:th "Stat"] [:th "Value"]]
     [:div
@@ -311,7 +306,9 @@
      " Generate")])
 
 (defn app-component []
-  (let [state @app]
+  (let [state @app
+        loading? (or (:generating state)
+                     (:trolling state))]
     [:div.container
      [:div.row
       [:h1.col-sm-6 (:text state)]
@@ -351,8 +348,8 @@
          ".json"]]
        [item-set (:itemset state) (:blocks state)]]
       [:div.col-sm-6
-       [build-stats (:recommended state) (:champ state) (:champ-level state) (:props state)]
-       [item-recommendation (:recommended state)]]]]))
+       [build-stats (:recommended state) (:champ state) (:champ-level state) (:props state) (:num-items state)]
+       [item-recommendation (:recommended state) loading?]]]]))
 
 (reagent/render-component [app-component]
                           (. js/document (getElementById "app")))
