@@ -218,21 +218,21 @@
 
 (defn current-build [recommended num-items]
   (let [build (concat recommended (repeat (- num-items (count recommended)) nil))]
-    (into [:div]
-          (for [i build]
-            [item-image i]))))
+    [:div (for [[idx i] (map vector (range) build)]
+            [:span {:key idx} [item-image i]])]))
 
 (defn build-stats [recommended champ champ-level props num-items]
   [:div.panel.panel-primary
    [:div.panel-heading "Current build"]
    [:div.panel-body [current-build recommended num-items]]
    [:table.table
-    [:tr [:th "Stat"] [:th "Value"]]
-    [:div
-     (map (fn [idx stat]
-            ^{:key idx}
-            [stat-row recommended props champ champ-level stat])
-          (range) stats)]]])
+    [:tbody
+     [:tr [:th "Stat"] [:th "Value"]]
+     [:div
+      (map (fn [idx stat]
+             ^{:key idx}
+             [stat-row recommended props champ champ-level stat])
+           (range) stats)]]]])
 
 (defn item-block [id block]
   (let [items (mapv #(get @items (int (:id %))) (:items block))]
