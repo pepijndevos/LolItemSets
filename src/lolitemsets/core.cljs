@@ -326,7 +326,7 @@
                           :when optimizable]
                       [objective-checkbox (:props state) name calc]))
        [number-selector (:champ-level state) "Champion level" :champ-level 18 1]
-       [number-selector (:champ-level state) "Number of items" :num-items 6 1] [:br]
+       [number-selector (:num-items state) "Number of items" :num-items 6 1] [:br]
        [:div.btn-group.btn-group-justified.visible-lg-block
         [button-of-command (:generating state)] ; generate
         [dorans-button (:trolling state)] ; troll
